@@ -476,28 +476,29 @@ fn bubble_meta(row: &MessageRow, own: bool, saved: bool) -> Div {
         .when(matches!(row.delivery, Delivery::Scheduled(_)), |meta| {
             meta.child(symbol("schedule", META_SIZE + 3., tint))
         })
-        .when(
-            own && row.delivery == Delivery::Delivered,
-            |meta| {
-                let check = match row.receipt {
-                    Receipt::Hidden => return meta,
-                    Receipt::Sent => symbol("done", META_CHECK_SIZE, tint).into_any_element(),
-                    Receipt::Read => symbol("done_all", META_CHECK_SIZE, theme::own_read()).into_any_element(),
-                    Receipt::ReadLive => receipt_fade_in(
-                        &row.key,
-                        div().child(symbol("done_all", META_CHECK_SIZE, theme::own_read())),
-                    )
-                    .into_any_element(),
-                };
-                let holder = div().id(ElementId::Name(format!("{}-receipt", row.key).into())).child(check);
-                meta.child(match row.receipt_label.clone() {
-                    Some(label) => holder.tooltip(move |window, cx| {
-                        gpui_kit::component::tooltip::Tooltip::new(label.clone()).build(window, cx)
-                    }),
-                    None => holder,
-                })
-            },
-        )
+        .when(own && row.delivery == Delivery::Delivered, |meta| {
+            let check = match row.receipt {
+                Receipt::Hidden => return meta,
+                Receipt::Sent => symbol("done", META_CHECK_SIZE, tint).into_any_element(),
+                Receipt::Read => {
+                    symbol("done_all", META_CHECK_SIZE, theme::own_read()).into_any_element()
+                }
+                Receipt::ReadLive => receipt_fade_in(
+                    &row.key,
+                    div().child(symbol("done_all", META_CHECK_SIZE, theme::own_read())),
+                )
+                .into_any_element(),
+            };
+            let holder = div()
+                .id(ElementId::Name(format!("{}-receipt", row.key).into()))
+                .child(check);
+            meta.child(match row.receipt_label.clone() {
+                Some(label) => holder.tooltip(move |window, cx| {
+                    gpui_kit::component::tooltip::Tooltip::new(label.clone()).build(window, cx)
+                }),
+                None => holder,
+            })
+        })
 }
 
 fn pulse<E: IntoElement + Styled + 'static>(id: &'static str, element: E) -> AnimationElement<E> {
@@ -683,7 +684,11 @@ fn others_row(
         .gap(px(2.))
         .flex_1()
         .min_w_0()
-        .max_w(bubble_max_width(&extras.timeline, AVATAR_SIZE + AVATAR_GAP, extras.compact))
+        .max_w(bubble_max_width(
+            &extras.timeline,
+            AVATAR_SIZE + AVATAR_GAP,
+            extras.compact,
+        ))
         .items_start();
     if first {
         column = column.child(

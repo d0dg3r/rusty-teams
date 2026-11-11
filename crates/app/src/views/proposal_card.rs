@@ -401,8 +401,8 @@ mod tests {
     use teams_core::MentionInput;
 
     use super::{
-        age_label, needs_upload, outgoing_for, picture_files, sample_entry,
-        sample_png, thumbnail_size,
+        age_label, needs_upload, outgoing_for, picture_files, sample_entry, sample_png,
+        thumbnail_size,
     };
     use crate::views::attachment_tray::{AttachmentTray, INLINE_IMAGE_MAX_BYTES, OutgoingImage};
 

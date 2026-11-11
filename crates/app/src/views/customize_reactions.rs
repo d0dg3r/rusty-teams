@@ -124,14 +124,12 @@ impl CustomizeForm {
             .rounded(px(10.))
             .tooltip(label)
             .map(|button| match &glyph {
-                Some(glyph) => {
-                    button.child(
-                        div()
-                            .text_size(px(SLOT_GLYPH_SIZE))
-                            .font_family(theme::EMOJI_FONT_FAMILY)
-                            .child(glyph.clone()),
-                    )
-                }
+                Some(glyph) => button.child(
+                    div()
+                        .text_size(px(SLOT_GLYPH_SIZE))
+                        .font_family(theme::EMOJI_FONT_FAMILY)
+                        .child(glyph.clone()),
+                ),
                 None => button.child(icon(IconName::Plus, 18., theme::text_muted())),
             });
         let (picker, view) = (self.picker.clone(), cx.entity().downgrade());

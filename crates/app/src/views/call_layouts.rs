@@ -1,7 +1,7 @@
 use std::time::Instant;
 
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::assets::IconName;
+use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::{
     button::{Button, ButtonVariants as _},
     h_flex,
@@ -18,9 +18,9 @@ use super::call_view::{own_tile, person_tile};
 use super::widgets::icon;
 use crate::app_state::AppState;
 use crate::call::{
-    ActiveCall, CallLayout, CallModel, GRID_PADDING, STRIP_GAP, SpeakerSplit,
-    StripSplit, TILE_GAP, Tile, TileSize, focus_stage_size, gallery_grid, gallery_split,
-    measured_stage, shown_bubbles, speaker_split, strip_split,
+    ActiveCall, CallLayout, CallModel, GRID_PADDING, STRIP_GAP, SpeakerSplit, StripSplit, TILE_GAP,
+    Tile, TileSize, focus_stage_size, gallery_grid, gallery_split, measured_stage, shown_bubbles,
+    speaker_split, strip_split,
 };
 use crate::theme;
 
@@ -398,10 +398,20 @@ fn speaker_body(
     now: Instant,
     stage: (f32, f32),
 ) -> AnyElement {
-    let SpeakerSplit { focus, others, own_cells, plan } = speaker_split(model, stage);
+    let SpeakerSplit {
+        focus,
+        others,
+        own_cells,
+        plan,
+    } = speaker_split(model, stage);
     let size = TileSize::sixteen_by_nine(plan.tile_width.floor());
     let has_filmstrip = plan.overflow.shown + own_cells + usize::from(plan.overflow.hidden > 0) > 0;
-    let focus_size = focus_stage_size(stage, GRID_PADDING, TILE_GAP, has_filmstrip.then_some(size.height));
+    let focus_size = focus_stage_size(
+        stage,
+        GRID_PADDING,
+        TILE_GAP,
+        has_filmstrip.then_some(size.height),
+    );
     let main = focus
         .as_ref()
         .and_then(|focus| render_focus_stage(app, state, focus, focus_size, now));
@@ -459,7 +469,11 @@ fn people_strip(
     now: Instant,
     stage: (f32, f32),
 ) -> Stateful<Div> {
-    let StripSplit { width, others, plan } = strip_split(model, state.call_strip_width, stage);
+    let StripSplit {
+        width,
+        others,
+        plan,
+    } = strip_split(model, state.call_strip_width, stage);
     let size = TileSize::sixteen_by_nine(plan.tile_width);
     let shown = &others[..plan.overflow.shown];
     let mut cells: Vec<AnyElement> = shown
@@ -471,7 +485,12 @@ fn people_strip(
         cells.insert(own_index, own_tile(app, state, model, size, now));
     }
     if plan.overflow.hidden > 0 {
-        cells.push(overflow_tile(app, state, size, &others[plan.overflow.shown..]));
+        cells.push(overflow_tile(
+            app,
+            state,
+            size,
+            &others[plan.overflow.shown..],
+        ));
     }
     v_flex()
         .id("call-strip")
@@ -499,7 +518,11 @@ fn strip_divider(app: &Entity<AppState>, dragging: bool) -> Stateful<Div> {
                 .w(px(DIVIDER_LINE))
                 .h(px(DIVIDER_LENGTH))
                 .rounded_full()
-                .bg(if dragging { theme::accent() } else { theme::border() }),
+                .bg(if dragging {
+                    theme::accent()
+                } else {
+                    theme::border()
+                }),
         )
         .on_mouse_down(MouseButton::Left, move |event, _, cx| {
             let pointer_x = f32::from(event.position.x);
@@ -519,7 +542,10 @@ fn share_body(
     let move_app = app.clone();
     let up_app = app.clone();
     let up_out_app = app.clone();
-    let dragging = state.call.as_ref().is_some_and(|call| call.share_stage.strip_drag.is_some());
+    let dragging = state
+        .call
+        .as_ref()
+        .is_some_and(|call| call.share_stage.strip_drag.is_some());
     h_flex()
         .id("call-share-body")
         .absolute()
@@ -538,7 +564,8 @@ fn share_body(
         })
         .child(share)
         .when(layout != CallLayout::Content, |row| {
-            row.child(strip_divider(app, dragging)).child(people_strip(app, state, model, now, stage))
+            row.child(strip_divider(app, dragging))
+                .child(people_strip(app, state, model, now, stage))
         })
         .into_any_element()
 }
