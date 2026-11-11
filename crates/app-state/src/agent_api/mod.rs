@@ -1,11 +1,12 @@
-pub mod bridge;
 pub mod body;
+pub mod bridge;
 pub mod pending;
 pub mod source;
 
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
+use app_base::agent_api::{extras, image_scale};
 use chrono::{DateTime, Local};
 use gpui_kit::*;
 use mcp::install::{Homes, Location};
@@ -14,7 +15,6 @@ use mcp::{
     ReactionProposal, ServerHandle,
 };
 use store::Store;
-use app_base::agent_api::{extras, image_scale};
 
 use crate::backend::Engine;
 use crate::runtime;

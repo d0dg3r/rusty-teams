@@ -41,7 +41,12 @@ impl FoldedControls {
 pub fn fixed_controls_width(has_camera_menu: bool, has_more: bool, has_leave_menu: bool) -> f32 {
     let mut widths = vec![
         CONTROL_SIZE + CAMERA_MENU_WIDTH,
-        CONTROL_SIZE + if has_camera_menu { CAMERA_MENU_WIDTH } else { 0. },
+        CONTROL_SIZE
+            + if has_camera_menu {
+                CAMERA_MENU_WIDTH
+            } else {
+                0.
+            },
         CONTROL_SIZE,
         LEAVE_WIDTH,
     ];
@@ -125,11 +130,17 @@ fn reactions_submenu(
             for reaction in Reaction::ALL {
                 let app = app.clone();
                 menu = menu.item(
-                    PopupMenuItem::new(format!("{} {}", reaction_glyph(&reaction), reaction.name()))
-                        .disabled(!can_react)
-                        .on_click(move |_, _, cx| {
-                            app.update(cx, |state, cx| state.send_call_reaction(reaction.clone(), cx))
-                        }),
+                    PopupMenuItem::new(format!(
+                        "{} {}",
+                        reaction_glyph(&reaction),
+                        reaction.name()
+                    ))
+                    .disabled(!can_react)
+                    .on_click(move |_, _, cx| {
+                        app.update(cx, |state, cx| {
+                            state.send_call_reaction(reaction.clone(), cx)
+                        })
+                    }),
                 );
             }
             menu
@@ -151,9 +162,13 @@ fn hand_item(popup: PopupMenu, app: &Entity<AppState>, model: &CallModel) -> Pop
 fn people_item(popup: PopupMenu, app: &Entity<AppState>, open: bool) -> PopupMenu {
     let app = app.clone();
     popup.item(
-        PopupMenuItem::new(if open { "Close the people list" } else { "Show people" })
-            .icon(IconName::Users)
-            .on_click(move |_, _, cx| app.update(cx, |state, cx| state.toggle_call_people(cx))),
+        PopupMenuItem::new(if open {
+            "Close the people list"
+        } else {
+            "Show people"
+        })
+        .icon(IconName::Users)
+        .on_click(move |_, _, cx| app.update(cx, |state, cx| state.toggle_call_people(cx))),
     )
 }
 
@@ -197,7 +212,10 @@ mod tests {
 
     #[test]
     fn folds_view_first_then_reactions() {
-        assert_eq!(folded_for_width(width_for(4.), FIXED, &ALL), [Foldable::View]);
+        assert_eq!(
+            folded_for_width(width_for(4.), FIXED, &ALL),
+            [Foldable::View]
+        );
         assert_eq!(
             folded_for_width(width_for(3.), FIXED, &ALL),
             [Foldable::View, Foldable::Reactions]

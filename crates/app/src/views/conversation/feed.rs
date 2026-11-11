@@ -30,7 +30,9 @@ pub(super) fn subject_input(
     window: &mut Window,
     cx: &mut Context<ConversationView>,
 ) -> Entity<InputState> {
-    cx.new(|cx| InputState::new(window, cx).placeholder(crate::views::composer::SUBJECT_PLACEHOLDER))
+    cx.new(|cx| {
+        InputState::new(window, cx).placeholder(crate::views::composer::SUBJECT_PLACEHOLDER)
+    })
 }
 
 impl ConversationView {
@@ -160,7 +162,11 @@ impl ConversationView {
         let view = cx.entity().downgrade();
         window.on_next_frame(move |_, cx| {
             view.update(cx, |this, cx| {
-                let index = this.rows.borrow().iter().position(|row| row.key() == root_id);
+                let index = this
+                    .rows
+                    .borrow()
+                    .iter()
+                    .position(|row| row.key() == root_id);
                 if let Some(index) = index {
                     this.scroller
                         .update(cx, |scroller, cx| scroller.reveal_item_bottom(index, cx));
@@ -284,7 +290,8 @@ impl ConversationView {
             let view = cx.entity().downgrade();
             let announce_view = view.clone();
             let open: PostAction = Box::new(move |window, cx| {
-                view.update(cx, |this, cx| this.open_new_post(window, cx)).ok();
+                view.update(cx, |this, cx| this.open_new_post(window, cx))
+                    .ok();
             });
             let announce: PostAction = Box::new(move |window, cx| {
                 announce_view
@@ -296,14 +303,9 @@ impl ConversationView {
                     .w_full()
                     .flex_none()
                     .children(proposal_card)
-                    .child(
-                        div()
-                            .w_full()
-                            .flex_none()
-                            .px(px(20.))
-                            .py(px(12.))
-                            .child(post_in_channel_card(&self.app.read(cx).directory, open, announce)),
-                    )
+                    .child(div().w_full().flex_none().px(px(20.)).py(px(12.)).child(
+                        post_in_channel_card(&self.app.read(cx).directory, open, announce),
+                    ))
                     .into_any_element(),
             );
         }
@@ -319,9 +321,9 @@ impl ConversationView {
                         .ghost()
                         .compact()
                         .label("Cancel")
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.cancel_new_post(window, cx)
-                        })),
+                        .on_click(
+                            cx.listener(|this, _, window, cx| this.cancel_new_post(window, cx)),
+                        ),
                 )
         });
         Some(

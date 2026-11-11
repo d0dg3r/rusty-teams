@@ -81,15 +81,15 @@ impl Render for CallMiniView {
         let now = Instant::now();
         let (status, _) = status_line(model, now);
         let viewport = window.viewport_size();
-        let (right, bottom) = self.timeline.get().map_or(
-            (px(MINI_RIGHT), px(MINI_BOTTOM)),
-            |timeline| {
-                (
-                    viewport.width - timeline.right() + px(ROW_PADDING),
-                    viewport.height - timeline.bottom() + px(MINI_RIGHT),
-                )
-            },
-        );
+        let (right, bottom) =
+            self.timeline
+                .get()
+                .map_or((px(MINI_RIGHT), px(MINI_BOTTOM)), |timeline| {
+                    (
+                        viewport.width - timeline.right() + px(ROW_PADDING),
+                        viewport.height - timeline.bottom() + px(MINI_RIGHT),
+                    )
+                });
         let sharing = model.local_share.is_some();
         let open_app = self.app.clone();
         let back_app = self.app.clone();
@@ -127,20 +127,11 @@ impl Render for CallMiniView {
                 open_app.update(cx, |state, cx| state.show_call(true, cx));
             })
             .child(speaker_layer(state, model, now))
-            .child(
-                div()
-                    .absolute()
-                    .top(px(8.))
-                    .left(px(8.))
-                    .child(top_left),
+            .child(div().absolute().top(px(8.)).left(px(8.)).child(top_left))
+            .children(
+                speaker_name
+                    .map(|name| h_flex().absolute().bottom(px(6.)).left(px(8.)).child(name)),
             )
-            .children(speaker_name.map(|name| {
-                h_flex()
-                    .absolute()
-                    .bottom(px(6.))
-                    .left(px(8.))
-                    .child(name)
-            }))
             .children(if sharing {
                 Some(stop_sharing_pill(&self.app).into_any_element())
             } else {

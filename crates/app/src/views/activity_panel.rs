@@ -3,8 +3,8 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use chrono::{DateTime, Local, NaiveDate, Offset, TimeZone, Utc};
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::assets::IconName;
+use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::{h_flex, tooltip::Tooltip, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
@@ -403,7 +403,9 @@ fn row_frame(parts: RowParts) -> Stateful<Div> {
                 .gap(px(2.))
                 .child(
                     div()
-                        .when(headline_wraps, |headline| headline.line_clamp(2).text_ellipsis())
+                        .when(headline_wraps, |headline| {
+                            headline.line_clamp(2).text_ellipsis()
+                        })
                         .when(!headline_wraps, |headline| headline.truncate())
                         .text_size(px(13.))
                         .line_height(px(HEADLINE_LINE_HEIGHT))
@@ -536,7 +538,9 @@ fn proposal_marker(pending: &PendingProposal, row_group: SharedString) -> Div {
         PendingKind::Reply { .. } => {
             marker.child(icon(IconName::MessageCircle, 10., theme::text_muted()))
         }
-        PendingKind::Reaction { glyph, .. } => marker.child(glyph.clone()),
+        PendingKind::Reaction { glyph, .. } => marker
+            .font_family(theme::EMOJI_FONT_FAMILY)
+            .child(glyph.clone()),
     }
 }
 
@@ -549,7 +553,9 @@ fn kind_marker(entry: &Entry, row_group: SharedString) -> Div {
             .font_weight(FontWeight::BOLD)
             .child("@"),
         Kind::Reaction => match entry.glyphs.first() {
-            Some(glyph) => marker.child(glyph.clone()),
+            Some(glyph) => marker
+                .font_family(theme::EMOJI_FONT_FAMILY)
+                .child(glyph.clone()),
             None => marker.child(muted_icon(IconName::Heart)),
         },
         Kind::MissedCall => marker.child(icon(IconName::PhoneOff, 10., theme::red())),
@@ -593,7 +599,10 @@ fn headline(entry: &Entry, sidebar: &Sidebar, resolved_names: &HashMap<String, S
         (Kind::Posted, "channelReplyMessage") => format!("{names} replied"),
         (Kind::Posted, _) => format!("{names} posted a new message"),
         (Kind::Team, "promotedToTeamAdmin") => {
-            return format!("{actor} made you an owner of {}", team_label(entry, channel));
+            return format!(
+                "{actor} made you an owner of {}",
+                team_label(entry, channel)
+            );
         }
         (Kind::Team, _) => {
             return format!("{actor} added you to {}", team_label(entry, channel));
@@ -711,7 +720,11 @@ impl RowText {
 }
 
 fn row_height(headline_wraps: bool, extra_lines: usize) -> f32 {
-    let headline_extra = if headline_wraps { HEADLINE_LINE_HEIGHT } else { 0. };
+    let headline_extra = if headline_wraps {
+        HEADLINE_LINE_HEIGHT
+    } else {
+        0.
+    };
     ROW_HEIGHT + headline_extra + extra_lines as f32 * EVENT_LINE_HEIGHT
 }
 
@@ -847,7 +860,11 @@ impl Render for ActivityPanel {
         } else {
             f32::from(window.viewport_size().height).max(FALLBACK_VIEWPORT)
         };
-        let visible = visible_slots(&heights, top - VIEWPORT_MARGIN, top + height + VIEWPORT_MARGIN);
+        let visible = visible_slots(
+            &heights,
+            top - VIEWPORT_MARGIN,
+            top + height + VIEWPORT_MARGIN,
+        );
         let visible_slots = &slots[visible.range.clone()];
         let unresolved: Vec<String> = visible_slots
             .iter()
@@ -1000,9 +1017,15 @@ mod tests {
         let start = chrono::DateTime::from_timestamp_millis(1793865600000).unwrap();
         let end = chrono::DateTime::from_timestamp_millis(1793869200000).unwrap();
         let berlin = chrono::FixedOffset::east_opt(3600).unwrap();
-        assert_eq!(super::event_line(start, end, &berlin), "Nov 5, 09:00 - 10:00");
+        assert_eq!(
+            super::event_line(start, end, &berlin),
+            "Nov 5, 09:00 - 10:00"
+        );
         let next_day = chrono::DateTime::from_timestamp_millis(1793955600000).unwrap();
-        assert_eq!(super::event_line(start, next_day, &berlin), "Nov 5, 09:00 - Nov 6, 10:00");
+        assert_eq!(
+            super::event_line(start, next_day, &berlin),
+            "Nov 5, 09:00 - Nov 6, 10:00"
+        );
     }
 
     #[test]
@@ -1016,15 +1039,39 @@ mod tests {
             teams: Vec::new(),
         };
         let cases = [
-            (with(Kind::Mention, "mentionInChat", "person", 1), "Anna mentioned you"),
-            (with(Kind::Mention, "mentionInChat", "everyone", 1), "Anna mentioned Everyone"),
-            (with(Kind::Reaction, "reactionInChat", "like", 1), "Anna reacted to your message"),
-            (with(Kind::Reaction, "reactionInChat", "like", 3), "Anna +2 reacted to your message"),
-            (with(Kind::Reply, "reply", "", 1), "Anna replied to your post"),
+            (
+                with(Kind::Mention, "mentionInChat", "person", 1),
+                "Anna mentioned you",
+            ),
+            (
+                with(Kind::Mention, "mentionInChat", "everyone", 1),
+                "Anna mentioned Everyone",
+            ),
+            (
+                with(Kind::Reaction, "reactionInChat", "like", 1),
+                "Anna reacted to your message",
+            ),
+            (
+                with(Kind::Reaction, "reactionInChat", "like", 3),
+                "Anna +2 reacted to your message",
+            ),
+            (
+                with(Kind::Reply, "reply", "", 1),
+                "Anna replied to your post",
+            ),
             (with(Kind::Reply, "replyToReply", "", 1), "Anna replied"),
-            (with(Kind::MissedCall, "call", "missedCall", 1), "Missed call from Anna"),
-            (with(Kind::Call, "call", "missedMeetingNudge", 1), "Anna asked you to join a meeting"),
-            (with(Kind::Posted, "follow", "channelNewMessage", 1), "Anna posted a new message"),
+            (
+                with(Kind::MissedCall, "call", "missedCall", 1),
+                "Missed call from Anna",
+            ),
+            (
+                with(Kind::Call, "call", "missedMeetingNudge", 1),
+                "Anna asked you to join a meeting",
+            ),
+            (
+                with(Kind::Posted, "follow", "channelNewMessage", 1),
+                "Anna posted a new message",
+            ),
         ];
         for (entry, expected) in cases {
             assert_eq!(headline(&entry, &sidebar, &HashMap::new()), expected);
@@ -1056,7 +1103,11 @@ mod tests {
             }],
         };
         assert_eq!(
-            headline(&with(Kind::Mention, "mention", "channel", 1), &sidebar, &HashMap::new()),
+            headline(
+                &with(Kind::Mention, "mention", "channel", 1),
+                &sidebar,
+                &HashMap::new()
+            ),
             "Anna mentioned Releases"
         );
         assert_eq!(
@@ -1064,7 +1115,11 @@ mod tests {
             Some("Platform > Releases")
         );
         assert_eq!(
-            headline(&with(Kind::Mention, "mention", "team", 1), &sidebar, &HashMap::new()),
+            headline(
+                &with(Kind::Mention, "mention", "team", 1),
+                &sidebar,
+                &HashMap::new()
+            ),
             "Anna mentioned Platform"
         );
         assert_eq!(
@@ -1128,7 +1183,9 @@ mod tests {
         let first_row = cx.debug_bounds(selector).unwrap();
         cx.simulate_mouse_move(first_row.center(), None, Modifiers::none());
         cx.update(|window, cx| window.draw(cx).clear(cx));
-        cx.update(|_, cx| activity.update(cx, |activity, cx| activity.mark_read(&first_unread, cx)));
+        cx.update(|_, cx| {
+            activity.update(cx, |activity, cx| activity.mark_read(&first_unread, cx))
+        });
         cx.update(|window, cx| window.draw(cx).clear(cx));
     }
 }
