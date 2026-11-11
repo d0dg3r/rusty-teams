@@ -1,0 +1,24 @@
+---
+description: OpenSpec-CLI ist installiert — nie «fehlt» melden ohne PATH-Check
+alwaysApply: true
+---
+
+# OpenSpec CLI (PATH)
+
+Die CLI **ist** installiert (`@fission-ai/openspec` unter `~/.npm-global`). Agent-Shells und die Cursor-GUI laden oft kein `~/.zshrc` — dann wirkt `openspec` «fehlend», obwohl nur der PATH knapper ist.
+
+## Pflicht
+
+1. Vor «OpenSpec fehlt / nicht installiert»: `command -v openspec` bzw. absolute Pfade prüfen.
+2. Erwartete Orte (in dieser Reihenfolge):
+   - `/usr/local/bin/openspec` (Symlink für Agent-/GUI-PATH)
+   - `$HOME/.npm-global/bin/openspec` (npm-Prefix)
+   - `$HOME/bin/openspec` / `$HOME/.local/bin/openspec`
+3. Shell-Blöcke: `$HOME/.npm-global/bin` und `/usr/local/bin` im `PATH` behalten (nicht nur `/usr/bin:/bin`).
+4. Skills `/opsx-*` und `openspec-*` brauchen die CLI — nicht `openspec init` vorschlagen, nur weil `command -v` im knappen PATH leer war.
+
+## Nicht tun
+
+- Behaupten, OpenSpec sei nicht installiert, ohne die Pfade oben geprüft zu haben
+- Wegen PATH-Lücke ein zweites globales npm-Install oder Repo-lokales `npx`-Workaround erfinden
+- Den Symlink `/usr/local/bin/openspec` durch eine Kopie ersetzen (npm-Updates aktualisieren den npm-Bin-Pfad)
