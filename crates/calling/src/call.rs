@@ -2547,6 +2547,10 @@ async fn drive(
             }
         }
     }
+    if software_audio.is_some() {
+        timeline.record("software audio", "stopping before tear down");
+        drop(software_audio);
+    }
     live.callbacks = Some(callbacks);
     Ok(())
 }
@@ -3290,7 +3294,7 @@ fn software_wanted(
 
 fn restore_device_track(factory: &PeerConnectionFactory, input: &DeviceChoice, peer: &PeerConnection, device_track: &RtcAudioTrack, timeline: &Timeline) {
     use libwebrtc::peer_connection_factory::native::PeerConnectionFactoryExt;
-    if cfg!(windows) && !factory.adm_recording_enabled() {
+    if !factory.adm_recording_enabled() {
         factory.set_adm_recording_enabled(true);
         devices::select_input(factory, input);
     }
@@ -3318,6 +3322,9 @@ fn sync_software_audio(
     if running == wanted && !restart {
         return;
     }
+    if running.is_some() {
+        timeline.record("software audio", "stopping");
+    }
     *software_audio = None;
     let was_sharing_sound = running.is_some_and(|plan| plan.computer_sound);
     let Some(plan) = wanted else {
@@ -3333,7 +3340,7 @@ fn sync_software_audio(
             if let Some(source) = &audio.microphone_source {
                 timeline.record("mic capture", source.clone());
             }
-            if cfg!(windows) && audio.microphone_source.is_some() {
+            if audio.microphone_source.is_some() {
                 use libwebrtc::peer_connection_factory::native::PeerConnectionFactoryExt;
                 factory.set_adm_recording_enabled(false);
             }
