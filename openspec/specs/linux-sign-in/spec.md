@@ -2,23 +2,30 @@
 
 ## Purpose
 
-Auf Linux meldet sich die App über eine Chrome-Instanz mit Remote-Debugging am Microsoft-Konto an, startet aus dem lokalen Cache und hält genau eine laufende Instanz.
+Auf Linux startet und verwaltet die App Chrome/Chromium mit Remote-Debugging (eigener Profilordner), meldet sich darüber am Microsoft-Konto an, startet aus dem lokalen Cache und hält genau eine laufende Instanz.
 
 ## Requirements
 
-### Requirement: Sign-in uses Chrome on a debug port
+### Requirement: App manages Chrome on a debug port
 
-On Linux the app SHALL connect to a Chrome started with a remote debugging port and already signed in to Teams (or Outlook on the web when the tenant needs it). The app MUST NOT claim a finished built-in login that replaces Chrome.
+On Linux the app SHALL start Google Chrome or Chromium with a remote debugging port and its own profile under the XDG data folder, keep it headless while signed in, and show the Chrome window when Teams needs a login. With `--endpoint` the app MUST attach to an existing Chrome instead of starting one. The app MUST NOT claim a finished built-in login that replaces Chrome.
 
-#### Scenario: Debug endpoint is used
+#### Scenario: Default start launches managed Chrome
 
-- **WHEN** the user starts the app with a Chrome listening on the configured debug endpoint
-- **THEN** the app attaches to that Chrome and can open Teams sessions
+- **WHEN** the user starts the app on Linux without `--endpoint`
+- **THEN** the app starts Chrome or Chromium on the debug port with the managed profile
+- **AND** can open Teams sessions through that instance
 
-#### Scenario: Missing Chrome is not silent success
+#### Scenario: External endpoint attaches instead
 
-- **WHEN** no Chrome answers on the debug endpoint
-- **THEN** the app does not pretend the user is signed in to Teams
+- **WHEN** the user starts with `--endpoint` pointing at a Chrome debug URL
+- **THEN** the app attaches to that Chrome and does not start a second managed browser for that session
+
+#### Scenario: Login window shows then returns to background
+
+- **WHEN** Teams requires a sign-in
+- **THEN** the managed Chrome window becomes visible for login
+- **AND** after a successful Teams session with MSAL cache it returns to the background
 
 ### Requirement: Start from local cache
 

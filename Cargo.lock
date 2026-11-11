@@ -281,6 +281,7 @@ dependencies = [
  "app-call-model",
  "app-state",
  "app-ui-kit",
+ "browser",
  "calling",
  "chatsvc",
  "chrono",
