@@ -60,18 +60,22 @@ jobs:
     needs: plan
     if: needs.plan.outputs.linux == 'true'
     uses: ./.forgejo/workflows/release-linux.yaml
+    secrets: inherit
 
   windows:
     needs: plan
     if: needs.plan.outputs.windows == 'true'
     uses: ./.forgejo/workflows/release-windows.yaml
+    secrets: inherit
 
   windows_arm:
     needs: plan
     if: needs.plan.outputs.windows_arm == 'true'
     uses: ./.forgejo/workflows/release-windows-arm.yaml
+    secrets: inherit
 
   macos:
     needs: plan
     if: needs.plan.outputs.macos == 'true'
     uses: ./.forgejo/workflows/release-macos.yaml
+    secrets: inherit

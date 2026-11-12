@@ -21,11 +21,12 @@ runs:
           aarch64|arm64) filter_platform=aarch64-pc-windows-msvc ;;
           *) filter_platform=x86_64-pc-windows-msvc ;;
         esac
-        manifestPath="$(cargo metadata --format-version 1 --filter-platform "$filter_platform" |
-          jq -re '[.packages[] | select(.name == "gpui-pre-windows") | .manifest_path] | first')"
-        # cygpath first, then dirname: the old `jq | xargs dirname | cygpath` chain let
-        # xargs eat the backslashes of the Windows manifest path as escapes, which left
-        # sourceDir at the C: root and `cp -r` walked the whole system drive.
+        # Prefer python over jq — Forgejo Windows runners often lack jq on PATH.
+        manifestPath="$(
+          cargo metadata --format-version 1 --filter-platform "$filter_platform" |
+            python -c 'import json,sys; pkgs=json.load(sys.stdin)["packages"]; print(next(p["manifest_path"] for p in pkgs if p["name"]=="gpui-pre-windows"))'
+        )"
+        # cygpath first, then dirname: avoid Windows backslashes being eaten by xargs.
         sourceDir="$(dirname "$(cygpath -u "$manifestPath")")"
         [ -f "$sourceDir/Cargo.toml" ] || { echo "not the gpui-pre-windows crate dir: $sourceDir" >&2; exit 1; }
         patchedDir="$(cygpath -m "$RUNNER_TEMP")/gpui-pre-windows"
