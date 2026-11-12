@@ -102,6 +102,7 @@ fn toggle_row(
     h_flex()
         .id(id)
         .h(px(ROW_HEIGHT))
+        .flex_none()
         .w_full()
         .items_center()
         .gap(px(8.))
@@ -115,9 +116,7 @@ fn toggle_row(
                 .size(px(14.))
                 .flex_none()
                 .rounded(px(3.))
-                .border_1()
-                .border_color(if on { swatch } else { theme::border_strong() })
-                .bg(if on { swatch } else { theme::surface() })
+                .bg(if on { swatch } else { theme::border() })
                 .when(on, |box_| {
                     box_.flex().items_center().justify_center().child(icon(
                         IconName::Check,

@@ -246,8 +246,9 @@ pub fn render_nav(
                 .when(!rusty.is_empty(), |groups| {
                     groups
                         .child(
+                            // No debug_selector: scroll content bounds are unclipped, so a
+                            // tagged divider under settings/nav false-overlaps sticky About.
                             div()
-                                .debug_selector(|| "settings/nav/divider".into())
                                 .w_full()
                                 .h(px(1.))
                                 .flex_none()
@@ -269,9 +270,15 @@ pub fn render_nav(
         )
         .when(about_shown, |nav| {
             nav.child(
-                div().w_full().px(px(NAV_PADDING_X)).child(
-                    item(SettingsSection::About).debug_selector(|| "settings/nav/about".into()),
-                ),
+                div()
+                    .w_full()
+                    .flex_none()
+                    .px(px(NAV_PADDING_X))
+                    .pt(px(6.))
+                    .child(
+                        item(SettingsSection::About)
+                            .debug_selector(|| "settings/nav/about".into()),
+                    ),
             )
         })
 }
