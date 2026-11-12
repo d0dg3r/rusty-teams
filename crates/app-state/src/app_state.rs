@@ -140,14 +140,17 @@ pub struct AppState {
     pub live_retry: Option<Arc<tokio::sync::Notify>>,
     pub notice_count: u64,
     pub followed_presence: Vec<crate::presence_follow::FollowedPerson>,
+    pub dismissed_absence_notices: std::collections::HashSet<String>,
     pub followed_changes: Vec<(String, &'static str)>,
     pub keep_unread: Option<String>,
     pub restorable_deletes: crate::restorable_deletes::RestorableDeletes,
     pub typing: TypingState,
     typing_timer_running: bool,
     pub(crate) sidebar_load: crate::sidebar_load::SidebarLoad,
+    pub(crate) warm_chats: crate::warm_chats::WarmChats,
     pub local_previews: HashMap<String, LocalPreview>,
     pub quick_view: Option<QuickView>,
+    pub manage_team: Option<crate::manage_team::ManageTeam>,
     pub scheduled: Vec<ScheduledDraft>,
     pub scheduled_polling: bool,
     pub saved: SavedSet,
@@ -301,14 +304,17 @@ impl AppState {
             live_retry: None,
             notice_count: 0,
             followed_presence: Vec::new(),
+            dismissed_absence_notices: Default::default(),
             followed_changes: Vec::new(),
             keep_unread: None,
             restorable_deletes: Default::default(),
             typing: TypingState::default(),
             typing_timer_running: false,
             sidebar_load: Default::default(),
+            warm_chats: Default::default(),
             local_previews: HashMap::new(),
             quick_view: None,
+            manage_team: None,
             scheduled: Vec::new(),
             scheduled_polling: false,
             saved: SavedSet::default(),
@@ -389,7 +395,6 @@ impl AppState {
         state.call_share_standout =
             crate::call::load_flag(&state.store, crate::call::SHARE_STANDOUT_META_KEY);
         state.call_report_enabled = crate::call::load_report_enabled(&state.store);
-        state.call_strip_width = crate::call::load_strip_width(&state.store);
         state.call_view = crate::call::ViewSettings::load(&state.store);
         state.call_background = crate::call::load_background(&state.store);
         state.call_camera = crate::call::load_camera(&state.store);
@@ -401,6 +406,7 @@ impl AppState {
         state.call_effects = crate::call::load_camera_effects(&state.store);
         state.join_options = crate::call::load_join_options(&state.store);
         state.call_backgrounds.customs = crate::call::load_custom_backgrounds(&state.store);
+        state.call_strip_width = crate::call::load_strip_width(&state.store);
         state.load_cached_translation_settings();
         if !mode.demo {
             state.directory.load_cached_presence(&state.store);
@@ -952,7 +958,6 @@ impl AppState {
     }
 
     pub fn open_quick_view(&mut self, view: QuickView, cx: &mut Context<Self>) {
-        self.show_call(false, cx);
         self.cancel_prejoin(cx);
         self.new_chat = false;
         self.quick_view = Some(view);
@@ -973,7 +978,6 @@ impl AppState {
     pub fn start_new_chat(&mut self, cx: &mut Context<Self>) {
         self.quick_view = None;
         self.new_chat = true;
-        self.show_call(false, cx);
         cx.emit(AppEvent::Selection);
         cx.notify();
     }
@@ -988,13 +992,13 @@ impl AppState {
     }
 
     pub fn select(&mut self, selection: Selection, cx: &mut Context<Self>) {
-        self.show_call(false, cx);
         self.cancel_prejoin(cx);
         self.call_end = None;
         let was_drafting = std::mem::take(&mut self.new_chat);
         let left_quick_view = self.quick_view.take().is_some();
+        let left_manage_team = self.manage_team.take().is_some();
         if !was_drafting && self.selection.as_ref() == Some(&selection) {
-            if left_quick_view {
+            if left_quick_view || left_manage_team {
                 cx.emit(AppEvent::Sidebar);
                 cx.notify();
             }
@@ -1008,6 +1012,7 @@ impl AppState {
         cx.notify();
         self.refresh_live_meeting(&conversation_id, cx);
         self.refresh_language_stamps(&conversation_id, cx);
+        self.refresh_partner_absence(&conversation_id, cx);
     }
 
     fn apply_typing(&mut self, event: TypingEvent, cx: &mut Context<Self>) {

@@ -18,7 +18,7 @@ use crate::devices::DeviceChoice;
 use crate::end::EndKind;
 use crate::error::{Error, Result};
 use crate::push::{CallNotification, Caller, PushEvent, decode_push};
-use crate::relay::DEFAULT_RELAY_HOST;
+use crate::relay::{DEFAULT_RELAY_HOST, RelayCache};
 use crate::signaling::{
     AttachRequest, LeaveReason, MeetingTarget, Participant, SelfIdentity, Signaling, TenantRouting,
     fetch_self,
@@ -145,6 +145,7 @@ pub(crate) struct Inner {
     pub(crate) identity: SelfIdentity,
     pub(crate) replier: CallbackReplier,
     pub(crate) gate: Arc<tokio::sync::Mutex<()>>,
+    pub(crate) relay: RelayCache,
     endpoint: Mutex<TrouterEndpoint>,
     routes: Mutex<HashMap<String, Route>>,
     rings: Mutex<HashMap<u64, mpsc::UnboundedSender<RingCommand>>>,
@@ -329,6 +330,7 @@ impl CallEngine {
             rings: Mutex::default(),
             seen: Mutex::default(),
             next_ring_id: AtomicU64::new(RING_ID_START),
+            relay: RelayCache::default(),
             default_camera: Mutex::new(DeviceChoice::SystemDefault),
             runtime: tokio::runtime::Handle::current(),
             events,
@@ -340,11 +342,12 @@ impl CallEngine {
         };
         let pump = tokio::spawn(pump_realtime(realtime, inner.clone(), stop_receiver));
         let router = tokio::spawn(route_callbacks(callbacks, engine.clone()));
+        let relay = prefetch_relay(inner.clone());
         inner
             .tasks
             .lock()
             .expect("tasks lock")
-            .extend([pump, router]);
+            .extend([pump, router, relay]);
         Ok((engine, event_receiver))
     }
 
@@ -517,6 +520,12 @@ impl CallEngine {
     }
 }
 
+fn prefetch_relay(inner: Arc<Inner>) -> JoinHandle<()> {
+    tokio::spawn(async move {
+        let _ = inner.relay.grant(&inner.session).await;
+    })
+}
+
 async fn ring_task(
     engine: CallEngine,
     notification: CallNotification,
@@ -524,6 +533,7 @@ async fn ring_task(
     mut commands: mpsc::UnboundedReceiver<RingCommand>,
 ) {
     let inner = engine.inner.clone();
+    prefetch_relay(inner.clone());
     let links = inner.callback_links();
     let route_id = links.call_id().to_owned();
     let mut callbacks = inner.register_route(&links);

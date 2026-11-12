@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
 use chatsvc::TrouterCallback;
@@ -70,7 +70,7 @@ use crate::organizer::{MeetingCapability, Modality, StateStep, Target, modality_
 use crate::outcome::{embedded_end, failed_participant_count, outcome_summary};
 use crate::push::CallNotification;
 use crate::recording::{Consent, RecordingPlan, RecordingStatus};
-use crate::relay::{DEFAULT_RELAY_HOST, RelayGrant, fetch_relay_grant};
+use crate::relay::{DEFAULT_RELAY_HOST, RelayGrant};
 use crate::renegotiation::{MediaAction, MediaNegotiator, MediaPath, RejectedOffer};
 use crate::roster::{Roster, direct_roster};
 use crate::screen::{
@@ -130,7 +130,7 @@ const SAME_PEER_ANSWER_LIMIT: Duration = Duration::from_secs(40);
 /// Teams sometimes answers a few seconds after the soft limit; keep the local offer until this grace ends.
 const SAME_PEER_LATE_GRACE: Duration = Duration::from_secs(15);
 const GATHERING_LIMIT: Duration = Duration::from_secs(5);
-const GATHERING_QUIET: Duration = Duration::from_millis(500);
+const RELAY_SETTLE: Duration = Duration::from_millis(200);
 const GATHERING_POLL: Duration = Duration::from_millis(50);
 const NEXT_PEER_LIMIT: Duration = Duration::from_secs(40);
 const GLARE_RESEND_LIMIT: Duration = Duration::from_secs(3);
@@ -330,19 +330,19 @@ struct PeerSession {
 struct Gathered {
     candidates: Arc<std::sync::Mutex<Vec<String>>>,
     complete: Arc<AtomicBool>,
-    relay_seen: Arc<AtomicBool>,
-    last_candidate: Arc<std::sync::Mutex<Option<Instant>>>,
+    relay_seen_at: Arc<std::sync::Mutex<Option<Instant>>>,
+    waited_ms: Arc<AtomicU64>,
+}
+
+/// libwebrtc gathers continually here, and TCP/TLS relays trickle in late, so a UDP relay plus a short settle is enough.
+fn gathering_settled(complete: bool, since_udp_relay: Option<Duration>) -> bool {
+    complete || since_udp_relay.is_some_and(|since| since >= RELAY_SETTLE)
 }
 
 impl Gathered {
-    /// libwebrtc gathers continually here, so "done" is a relay candidate followed by a quiet spell.
     fn settled(&self) -> bool {
-        let quiet = self
-            .last_candidate
-            .lock()
-            .expect("candidate time lock")
-            .is_some_and(|at| at.elapsed() >= GATHERING_QUIET);
-        self.complete.load(Ordering::SeqCst) || (self.relay_seen.load(Ordering::SeqCst) && quiet)
+        let since_udp_relay = self.relay_seen_at.lock().expect("relay time lock").map(|at| at.elapsed());
+        gathering_settled(self.complete.load(Ordering::SeqCst), since_udp_relay)
     }
 
     async fn candidates(&self) -> Vec<String> {
@@ -351,7 +351,13 @@ impl Gathered {
             tokio::time::sleep(GATHERING_POLL).await;
         }
         self.complete.store(true, Ordering::SeqCst);
+        self.waited_ms.store(waited.elapsed().as_millis() as u64, Ordering::SeqCst);
         self.candidates.lock().expect("candidates lock").clone()
+    }
+
+    fn summary(&self) -> String {
+        let count = self.candidates.lock().expect("candidates lock").len();
+        format!("{count} candidate(s) after {} ms", self.waited_ms.load(Ordering::SeqCst))
     }
 }
 
@@ -589,15 +595,13 @@ fn open_peer(
         .transpose()?;
     let gathered = Gathered::default();
     let candidate_sink = gathered.candidates.clone();
-    let relay_seen = gathered.relay_seen.clone();
-    let last_candidate = gathered.last_candidate.clone();
+    let relay_seen_at = gathered.relay_seen_at.clone();
     peer.on_ice_candidate(Some(Box::new(move |candidate| {
         if candidate.sdp_mline_index() == 0 {
             let text = candidate.candidate();
             if is_udp_relay(&text) {
-                relay_seen.store(true, Ordering::SeqCst);
+                relay_seen_at.lock().expect("relay time lock").get_or_insert_with(Instant::now);
             }
-            *last_candidate.lock().expect("candidate time lock") = Some(Instant::now());
             candidate_sink.lock().expect("candidates lock").push(text);
         }
     })));
@@ -962,9 +966,7 @@ async fn drive(
     } else {
         None
     };
-    let grant = control
-        .until_hangup(fetch_relay_grant(&inner.session))
-        .await??;
+    let grant = control.until_hangup(inner.relay.grant(&inner.session)).await??;
     timeline.record(
         "GET trap/tokens",
         format!("relay grant, expires in {} s", grant.expires_in_seconds),
@@ -1202,6 +1204,9 @@ async fn drive(
                     answered.remote.lines.len()
                 ),
             );
+            if one_to_one {
+                timeline.record("ice gathered", current.gathered.summary());
+            }
             timeline.record_sdp("remote offer", &teams_offer);
             timeline.record_sdp("local answer", &answered.answer_sdp);
             dump_sdp(options, "4-teams-answer.sdp", &answered.answer_sdp);
@@ -4427,17 +4432,25 @@ struct ShareReceive {
     pli_count: u32,
     fir_count: u32,
     freeze_count: u32,
+    qp_sum: u64,
+    bytes_received: u64,
 }
 
 impl ShareReceive {
+    fn average_qp(&self) -> u64 {
+        self.qp_sum.checked_div(u64::from(self.frames_decoded)).unwrap_or(0)
+    }
+
     fn summary(&self) -> String {
         format!(
-            " share in decoded={} keyframes={} {}x{} fps={:.0} pli={} fir={} freezes={}",
+            " share in decoded={} keyframes={} {}x{} fps={:.0} qp={} bytes={} pli={} fir={} freezes={}",
             self.frames_decoded,
             self.key_frames_decoded,
             self.width,
             self.height,
             self.frames_per_second,
+            self.average_qp(),
+            self.bytes_received,
             self.pli_count,
             self.fir_count,
             self.freeze_count
@@ -4484,6 +4497,8 @@ async fn collect_stats(peer: &PeerConnection, share_mids: &[String]) -> StatsSna
                         pli_count: inbound.inbound.pli_count,
                         fir_count: inbound.inbound.fir_count,
                         freeze_count: inbound.inbound.freeze_count,
+                        qp_sum: inbound.inbound.qp_sum,
+                        bytes_received: inbound.inbound.bytes_received,
                     });
                 }
                 snapshot.video.inbound_frames_decoded += u64::from(inbound.inbound.frames_decoded);
@@ -4586,6 +4601,14 @@ async fn collect_stats(peer: &PeerConnection, share_mids: &[String]) -> StatsSna
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn gathering_settles_shortly_after_a_udp_relay_or_when_complete() {
+        assert!(!gathering_settled(false, None));
+        assert!(!gathering_settled(false, Some(Duration::from_millis(50))));
+        assert!(gathering_settled(false, Some(RELAY_SETTLE)));
+        assert!(gathering_settled(true, None));
+    }
+
     #[tokio::test]
     async fn a_hanging_setup_step_ends_on_cancel_or_after_the_step_timeout() {
         let (handle, mut control) = crate::control::call_channel();

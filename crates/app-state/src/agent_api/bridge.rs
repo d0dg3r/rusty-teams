@@ -156,6 +156,7 @@ pub fn apply(
         } => {
             reactions.remove(&(conversation_id, message_id));
         }
+        UiEvent::MeetingProposalsChanged => {}
     }
 }
 
@@ -592,7 +593,7 @@ mod tests {
         AgentPolicy {
             enabled: true,
             chats: Access::All,
-            propose: true,
+            write: true,
             ..AgentPolicy::default()
         }
     }

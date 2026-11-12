@@ -109,6 +109,7 @@ pub fn share_thumbnail(
         }
     });
     for _ in 0..THUMBNAIL_ATTEMPTS {
+        pump_messages();
         capturer.capture_frame();
         if let Some(picture) = captured.lock().ok().and_then(|mut slot| slot.take()) {
             return Some(picture);
@@ -117,6 +118,22 @@ pub fn share_thumbnail(
     }
     None
 }
+
+// Windows Graphics Capture hands frames to a DispatcherQueue on this thread; without a pump none arrive.
+#[cfg(windows)]
+fn pump_messages() {
+    use windows::Win32::UI::WindowsAndMessaging::{DispatchMessageW, MSG, PM_REMOVE, PeekMessageW, TranslateMessage};
+    let mut message = MSG::default();
+    unsafe {
+        while PeekMessageW(&mut message, None, 0, 0, PM_REMOVE).as_bool() {
+            let _ = TranslateMessage(&message);
+            let _ = DispatchMessageW(&message);
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn pump_messages() {}
 
 fn scaled_bgra(
     bytes: &[u8],
@@ -207,6 +224,7 @@ pub fn start_screen_capture(
             }
         });
         while !stop.load(Ordering::SeqCst) {
+            pump_messages();
             capturer.capture_frame();
             std::thread::sleep(Duration::from_secs(1) / fps.load(Ordering::Relaxed).max(1));
         }

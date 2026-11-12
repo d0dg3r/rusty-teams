@@ -32,6 +32,11 @@ pub const EMOJI_FONT_FAMILY: &str = "Apple Color Emoji";
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
 pub const EMOJI_FONT_FAMILY: &str = "Noto Color Emoji";
 
+#[cfg(target_os = "linux")]
+const PLATFORM_FONT_FILES: [&[u8]; 1] = [include_bytes!("../../app/assets/fonts/NotoColorEmoji.ttf")];
+#[cfg(not(target_os = "linux"))]
+const PLATFORM_FONT_FILES: [&[u8]; 0] = [];
+
 const WHITE: u32 = 0xffffff;
 const CLOSE_BUTTON_ICON: u32 = 0xffffff;
 
@@ -44,10 +49,11 @@ fn color_with_alpha(hex: u32) -> Hsla {
 }
 
 pub fn load_fonts(cx: &mut App) {
-    let mut fonts: Vec<Cow<'static, [u8]>> =
-        FONT_FILES.iter().copied().map(Cow::Borrowed).collect();
-    #[cfg(target_os = "linux")]
-    fonts.push(Cow::Borrowed(EMOJI_FONT));
+    let fonts = FONT_FILES
+        .iter()
+        .chain(PLATFORM_FONT_FILES.iter())
+        .map(|bytes| Cow::Borrowed(*bytes))
+        .collect();
     let _ = cx.text_system().add_fonts(fonts);
 }
 

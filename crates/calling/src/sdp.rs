@@ -522,8 +522,13 @@ fn signal_rtp_line(
                     .iter()
                     .position(|format| format == payload)
                     .unwrap_or(usize::MAX);
+                let is_opus = rtpmap
+                    .get(payload)
+                    .is_some_and(|encoding| encoding.to_ascii_lowercase().starts_with("opus/"));
                 let cleaned = if video {
                     value.replace(";sps-pps-idr-in-keyframe=1", "")
+                } else if is_opus {
+                    with_fmtp_parameters(value, &OPUS_RECEIVE_FULLBAND)
                 } else {
                     value.to_owned()
                 };
@@ -777,10 +782,16 @@ fn transport_attributes(teams_line: &Media, session: &Session) -> Vec<Attribute>
 const OPUS_SEND_QUALITY: [(&str, &str); 2] =
     [("maxaveragebitrate", "40000"), ("maxplaybackrate", "48000")];
 
+const OPUS_RECEIVE_FULLBAND: [(&str, &str); 2] = [("maxplaybackrate", "48000"), ("sprop-maxcapturerate", "48000")];
+
 /// libwebrtc sizes its Opus encoder from these remote fmtp parameters; without them it picks its own bitrate.
 fn with_opus_send_quality(fmtp: &str) -> String {
+    with_fmtp_parameters(fmtp, &OPUS_SEND_QUALITY)
+}
+
+fn with_fmtp_parameters(fmtp: &str, parameters: &[(&str, &str)]) -> String {
     let mut value = fmtp.to_owned();
-    for (name, setting) in OPUS_SEND_QUALITY {
+    for &(name, setting) in parameters {
         if value
             .split([' ', ';'])
             .any(|parameter| parameter.split('=').next() == Some(name))
@@ -1400,6 +1411,7 @@ mod tests {
         assert!(text.contains("a=x-signaling-fb:* x-message app recv:dsh\n"));
         assert!(text.contains("a=x-ssrc-range:42-42\n"));
         assert!(text.contains("a=rtpmap:63 RED/8000\n"));
+        assert!(text.contains("a=fmtp:111 minptime=10;useinbandfec=1;maxplaybackrate=48000;sprop-maxcapturerate=48000\n"));
         assert!(text.contains("a=rtcp:1234\n"));
         assert!(text.contains(
             "a=extmap:2 http:\\\\www.webrtc.org\\experiments\\rtp-hdrext\\abs-send-time\n"

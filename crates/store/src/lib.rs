@@ -9,6 +9,7 @@ mod folders;
 mod image_files;
 mod images;
 mod messages;
+mod meeting_proposals;
 mod meta;
 mod migrations;
 mod models;
@@ -30,8 +31,9 @@ pub use calendar_accounts::{
 };
 pub use error::{Error, Result};
 pub use image_files::ImageFileCache;
+pub use migrations::latest_version;
 pub use models::{
-    ActivityRecord, AgentProposalMention, AgentProposalRecord, AgentReactionRecord,
+    ActivityRecord, AgentMeetingRecord, AgentProposalMention, AgentProposalRecord, AgentReactionRecord,
     AttachmentImage, AvatarRecord, BOT_MRI_PREFIX, ChannelLayoutRecord, ChannelMentions,
     ChannelNotificationLevel, ChannelNotifications, ChannelReadState, ChannelRecord, ChannelTabRecord, ChatPreview,
     ChatRecord, ConversationHit, DraftRecord, FolderRecord, ImageRecord, MemberRecord,

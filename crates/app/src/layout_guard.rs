@@ -191,6 +191,7 @@ mod frames {
         POST_AUDIENCE_TAG, POST_CARD_DIVIDER_TAG, POST_CARD_FOOTER_TAG, POST_CARD_HEADER_TAG,
         POST_CARD_SEND_TAG, POST_CARD_SUBJECT_TAG,
     };
+    use crate::views::call_window::CALL_WINDOW_TAG;
     use crate::views::conversation::{
         CHANNEL_DETAILS_BUTTON, CHANNEL_DETAILS_PINNED_TAG, CHANNEL_DETAILS_SHARED_TAG,
         CHANNEL_DETAILS_TAG,
@@ -215,7 +216,7 @@ mod frames {
     use crate::views::reaction_proposal_pill::REACTION_PILL;
     use crate::views::recap_tab::RECAP_REGION;
     use crate::views::shell::{
-        AppShell, Startup, bind_keys, install_globals, sidebar_hidden_in_call,
+        AppShell, Startup, bind_keys, install_globals,
     };
     use crate::views::shortcuts::{
         ClearChatFilters, FilterMutedChats, FindInChat, OpenActivity, OpenAgents, OpenCalendar,
@@ -260,9 +261,9 @@ mod frames {
     const CALL_GUARDED: &[&str] = &[
         "shell/islands/main/call-header",
         "shell/islands/main/call-stage",
-        "shell/islands/main/call-controls",
-        "shell/islands/main/call-controls/mic",
-        "shell/islands/main/call-controls/leave",
+        "shell/islands/main/call-header/controls",
+        "shell/islands/main/call-header/controls/mic",
+        "shell/islands/main/call-header/leave",
     ];
     const AGENTS_LIST: &str = "shell/islands/sidebar/agents";
     const CALENDAR: &str = "shell/islands/calendar";
@@ -299,7 +300,6 @@ mod frames {
     const SHARE_GUARDED: &[&str] = &[
         "shell/islands/main/call-stage/share-content",
         "shell/islands/main/call-stage/share-content/zoom-chip",
-        "shell/islands/main/call-stage/share-divider",
         "shell/islands/main/call-stage/share-strip",
     ];
     const OVERLAY_PANELS: &[&str] = &[CALL_TRANSCRIPT, PEOPLE_PANEL];
@@ -695,6 +695,29 @@ mod frames {
         (consult, held)
     }
 
+    /// The meeting window the call controller opens once a call is set.
+    fn call_window_context(visual: &mut VisualTestContext) -> VisualTestContext {
+        for _ in 0..SETTLE_LIMIT {
+            let main = visual.update(|window, _| window.window_handle());
+            let candidates = visual.update(|_, cx| cx.windows());
+            for handle in candidates.into_iter().filter(|handle| *handle != main) {
+                let alive = visual.update(|_, cx| handle.update(cx, |_, _, _| ()).is_ok());
+                if !alive {
+                    continue;
+                }
+                let mut candidate = VisualTestContext::from_window(handle, visual);
+                candidate.update(|window, cx| window.render_frame(cx));
+                if candidate.debug_bounds(CALL_WINDOW_TAG).is_some() {
+                    return candidate;
+                }
+            }
+            visual.executor().advance_clock(SETTLE_STEP);
+            std::thread::sleep(SETTLE_STEP);
+            visual.run_until_parked();
+        }
+        panic!("the call window never opened");
+    }
+
     fn mount(cx: &mut TestAppContext) -> (gpui_kit::AnyWindowHandle, Entity<AppState>) {
         mount_with(cx, false)
     }
@@ -964,14 +987,20 @@ mod frames {
                     screen_name,
                     "call" | "call-people" | "call-transcript" | "call-share" | "call-consult"
                 );
-                let tags = collect(&mut visual, status_menu.then_some(MENU));
+                let in_call_window = is_call || screen_name == "prejoin";
+                let tags = if in_call_window {
+                    let mut call_visual = call_window_context(&mut visual);
+                    call_visual.simulate_resize(size(px(width), px(height)));
+                    collect(&mut call_visual, None)
+                } else {
+                    collect(&mut visual, status_menu.then_some(MENU))
+                };
                 let mut expected = GUARDED.to_vec();
+                if in_call_window {
+                    expected = vec!["shell/islands/main"];
+                }
                 if is_call {
                     expected.extend(CALL_GUARDED);
-                    let panel_open = matches!(screen_name, "call-people" | "call-transcript");
-                    if sidebar_hidden_in_call(width, panel_open) {
-                        expected.retain(|path| *path != "shell/islands/sidebar");
-                    }
                 }
                 if screen_name == "call-transcript" {
                     expected.push(CALL_TRANSCRIPT);
@@ -1262,14 +1291,16 @@ mod frames {
                     cx.notify();
                 })
             });
-            collect(&mut visual, Some(CHAT_PANEL_TAG));
-            let panel = visual
+            let mut call_visual = call_window_context(&mut visual);
+            call_visual.simulate_resize(size(px(width), px(height)));
+            collect(&mut call_visual, Some(CHAT_PANEL_TAG));
+            let panel = call_visual
                 .debug_bounds(CHAT_PANEL_TAG)
                 .expect("chat panel rendered");
             let bubbles: Vec<(usize, Bounds<Pixels>)> = BUBBLE_TAGS
                 .iter()
                 .enumerate()
-                .filter_map(|(index, tag)| visual.debug_bounds(tag).map(|bounds| (index, bounds)))
+                .filter_map(|(index, tag)| call_visual.debug_bounds(tag).map(|bounds| (index, bounds)))
                 .collect();
             assert!(!bubbles.is_empty(), "no bubbles rendered in the call chat");
             let found: Vec<String> = bubbles
@@ -1293,6 +1324,87 @@ mod frames {
             });
             assert!(found.is_empty(), "{}", found.join("\n"));
         }
+    }
+
+    #[gpui_kit::test]
+    fn a_new_message_never_opens_a_gap_between_the_rows_above(cx: &mut TestAppContext) {
+        const GAP_CHAT: &str = "demo-chat-priya";
+        let (handle, app) = mount(cx);
+        let mut visual = VisualTestContext::from_window(handle, cx);
+        visual.simulate_resize(size(px(1280.), px(800.)));
+        visual.update(|_, cx| {
+            app.update(cx, |state, cx| {
+                state.select(Selection::Chat(GAP_CHAT.to_owned()), cx)
+            })
+        });
+        collect(&mut visual, Some(TIMELINE_TAG));
+        collect(&mut visual, None);
+        let bubble_positions = |visual: &mut VisualTestContext| -> Vec<(usize, f32, f32)> {
+            BUBBLE_TAGS
+                .iter()
+                .enumerate()
+                .filter_map(|(index, tag)| {
+                    visual
+                        .debug_bounds(tag)
+                        .map(|bounds| (index, f32::from(bounds.top()), f32::from(bounds.bottom())))
+                })
+                .collect()
+        };
+        let before = bubble_positions(&mut visual);
+        visual.update(|_, cx| {
+            app.update(cx, |state, cx| {
+                let record = store::MessageRecord {
+                    conversation_id: GAP_CHAT.to_owned(),
+                    message_id: "guard-new".to_owned(),
+                    sender_id: Some(demo::PRIYA_ID.to_owned()),
+                    sender_name: Some("Priya Nair".to_owned()),
+                    created_at: chrono::Utc::now().max(demo::at(0, 10, 48)),
+                    body_html: "<p>Fresh message</p>".to_owned(),
+                    links_json: "[]".to_owned(),
+                    attachments_json: "[]".to_owned(),
+                    reactions_json: "[]".to_owned(),
+                    mentions_json: "[]".to_owned(),
+                    ..Default::default()
+                };
+                state.store.upsert_messages(&[record]).expect("store message");
+                state.apply(
+                    crate::backend::BackendEvent::Core(teams_core::CoreEvent::MessagesChanged {
+                        conversation_id: GAP_CHAT.to_owned(),
+                    }),
+                    cx,
+                );
+            })
+        });
+        let mut frames = Vec::new();
+        for _ in 0..12 {
+            visual.executor().advance_clock(Duration::from_millis(16));
+            visual.run_until_parked();
+            visual.update(|window, cx| window.render_frame(cx));
+            frames.push(bubble_positions(&mut visual));
+        }
+        let spacing = |positions: &[(usize, f32, f32)]| -> Vec<(usize, f32)> {
+            positions
+                .windows(2)
+                .map(|pair| (pair[1].0, pair[1].1 - pair[0].2))
+                .collect()
+        };
+        let resting = spacing(&before);
+        let found: Vec<String> = frames
+            .iter()
+            .enumerate()
+            .flat_map(|(frame, positions)| {
+                let resting = resting.clone();
+                spacing(positions)
+                    .into_iter()
+                    .filter_map(move |(index, gap)| {
+                        let expected = resting.iter().find(|(known, _)| *known == index)?.1;
+                        ((gap - expected).abs() > TOLERANCE).then(|| {
+                            format!("frame {frame}: gap above bubble {index} is {gap}, was {expected}")
+                        })
+                    })
+            })
+            .collect();
+        assert!(found.is_empty(), "{}", found.join("\n"));
     }
 
     fn inside_horizontally(outer: Bounds<Pixels>, inner: Bounds<Pixels>) -> bool {
@@ -2859,11 +2971,6 @@ const OUTLINE_ALLOWLIST: &[(&str, &str, &str)] = &[
         "views/composer/schedule.rs",
         "theme::accent()",
         "input field",
-    ),
-    (
-        "views/call_mini.rs",
-        "border)",
-        "state signal (speaking, sharing, drag, drop, failed), not a resting outline",
     ),
     (
         "views/sidebar.rs",
