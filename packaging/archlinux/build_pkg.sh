@@ -60,12 +60,15 @@ $ENGINE start "$cid" >/dev/null
 $ENGINE cp "$STAGE/." "$cid:/build/"
 $ENGINE exec -u root "$cid" bash -lc '
   set -euo pipefail
-  pacman -Sy --noconfirm --needed base-devel sudo archlinux-keyring
+  pacman -Sy --noconfirm --needed \
+    base-devel sudo archlinux-keyring \
+    glib2 alsa-lib fontconfig libxkbcommon wayland
   useradd -m builduser
   echo "builduser ALL=(ALL) NOPASSWD: ALL" >/etc/sudoers.d/builduser
   chown -R builduser:builduser /build
   cd /build
-  sudo -u builduser makepkg -f --noconfirm
+  # Prebuilt binary: skip dependency resolution in the chroot (-d).
+  sudo -u builduser makepkg -df --noconfirm
 '
 $ENGINE cp "$cid:/build/." "$OUTDIR/"
 built="$(find "$OUTDIR" -name 'rusty-teams-*.pkg.tar.zst' | head -1)"

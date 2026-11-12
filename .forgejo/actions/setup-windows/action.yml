@@ -21,26 +21,15 @@ runs:
           aarch64|arm64) filter_platform=aarch64-pc-windows-msvc ;;
           *) filter_platform=x86_64-pc-windows-msvc ;;
         esac
-        # Prefer python over jq — Forgejo Windows runners often lack jq on PATH.
-        py=()
-        for candidate in python3 py python; do
-          if command -v "$candidate" >/dev/null 2>&1; then
-            if [[ "$candidate" == py ]]; then
-              py=(py -3)
-            else
-              py=("$candidate")
-            fi
-            break
-          fi
-        done
-        if ((${#py[@]} == 0)); then
-          echo "python3/py/python required for gpui-pre-windows staging" >&2
-          exit 1
-        fi
+        # Forgejo Windows runners often lack jq/python on PATH — use PowerShell.
+        meta_json="$(mktemp)"
+        cargo metadata --format-version 1 --filter-platform "$filter_platform" >"$meta_json"
         manifestPath="$(
-          cargo metadata --format-version 1 --filter-platform "$filter_platform" |
-            "${py[@]}" -c 'import json,sys; pkgs=json.load(sys.stdin)["packages"]; print(next(p["manifest_path"] for p in pkgs if p["name"]=="gpui-pre-windows"))'
+          powershell.exe -NoProfile -Command \
+            "\$j = Get-Content -Raw '$(cygpath -w "$meta_json")' | ConvertFrom-Json; (\$j.packages | Where-Object { \$_.name -eq 'gpui-pre-windows' } | Select-Object -First 1).manifest_path"
         )"
+        rm -f "$meta_json"
+        [[ -n "$manifestPath" ]] || { echo "gpui-pre-windows not found in cargo metadata" >&2; exit 1; }
         # cygpath first, then dirname: avoid Windows backslashes being eaten by xargs.
         sourceDir="$(dirname "$(cygpath -u "$manifestPath")")"
         [ -f "$sourceDir/Cargo.toml" ] || { echo "not the gpui-pre-windows crate dir: $sourceDir" >&2; exit 1; }
