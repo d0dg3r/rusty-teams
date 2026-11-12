@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0-joe.6] - 2026-11-12
+
+### Added
+
+- Synced upstream `danieldaeschle/rusty-teams` (through `b07109f`): dedicated
+  call/meeting window, Teams-like call toolbar and gallery paging, join preview,
+  splash with loading progress, native Manage team page, out-of-office notice,
+  chat message appear animations and in-chat typing indicator.
+- MCP: write_message / add_reaction with review-before-send, free-time lookup and
+  meeting organization; meeting proposals persist across restart
+  (store migrations `0030`, `0031`).
+
+### Changed
+
+- Workspace version aligned to `0.3.0` with upstream; Joe release tags remain
+  `v0.3.0-joe.N`.
+- Fork features kept across the merge: UI locale DE/EN, camera quality Auto/720p/1080p,
+  Wayland ScreenCast portal, Google calendar accounts, agent providers, Forgejo
+  CI/packaging, and the bundled CBDT emoji font.
+
 ## [0.3.0-joe.5] - 2026-11-12
 
 ### Added

@@ -29,7 +29,7 @@ async fn main() {
     let transport = webview::start(webview::HostConfig {
         user_data_folder: folder,
         window_title: "Rusty Teams engine probe - Sign in".into(),
-        log: |line| eprintln!("{line}"),
+        log: |line| println!("{line}"),
     });
     let sessions = async {
         let session = Session::with_transport(transport.clone(), SessionConfig::default()).await?;

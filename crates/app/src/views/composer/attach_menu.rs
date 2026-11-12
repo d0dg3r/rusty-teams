@@ -92,16 +92,16 @@ fn demo_files() -> Vec<CloudFile> {
         ("Architecture review.pdf", 860_000, 2 * DAY),
         ("Budget 2027.xlsx", 74_000, 9 * DAY),
     ]
-    .into_iter()
-    .map(|(name, size, age)| CloudFile {
-        name: name.to_owned(),
-        size,
-        web_url: format!("https://contoso.sharepoint.com/demo/{name}"),
-        drive_id: None,
-        item_id: None,
-        last_opened: Some(now - chrono::Duration::seconds(age)),
-    })
-    .collect()
+        .into_iter()
+        .map(|(name, size, age)| CloudFile {
+            name: name.to_owned(),
+            size,
+            web_url: format!("https://example.com/demo/{name}"),
+            drive_id: None,
+            item_id: None,
+            last_opened: Some(now - chrono::Duration::seconds(age)),
+        })
+        .collect()
 }
 
 impl Composer {

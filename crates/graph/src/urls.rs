@@ -196,6 +196,14 @@ pub fn channel_members(team_id: &str, channel_id: &str) -> String {
     )
 }
 
+pub fn channel_member_list(team_id: &str, channel_id: &str) -> String {
+    format!(
+        "{GRAPH}/v1.0/teams/{}/channels/{}/members?$top=999",
+        segment(team_id),
+        segment(channel_id)
+    )
+}
+
 pub fn channel_tab(team_id: &str, channel_id: &str, tab_id: &str) -> String {
     format!(
         "{GRAPH}/v1.0/teams/{}/channels/{}/tabs/{}",
@@ -381,9 +389,18 @@ pub fn channel_delta(
     url
 }
 
-pub fn people_search(query: &str, top: usize) -> String {
+pub fn people_search(query: &str, top: usize, with_alias: bool) -> String {
     let term = query.replace('"', "");
-    let search = segment(&format!("\"displayName:{term}\" OR \"mail:{term}\""));
+    let fields: &[&str] = if with_alias {
+        &["displayName", "mail", "mailNickname", "userPrincipalName"]
+    } else {
+        &["displayName", "mail"]
+    };
+    let clauses: Vec<String> = fields
+        .iter()
+        .map(|field| format!("\"{field}:{term}\""))
+        .collect();
+    let search = segment(&clauses.join(" OR "));
     format!(
         "{GRAPH}/v1.0/users?$search={search}&$select=id,displayName,mail,userPrincipalName,jobTitle,department&$top={top}"
     )

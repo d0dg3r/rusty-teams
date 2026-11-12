@@ -1076,6 +1076,7 @@ impl SidebarView {
             );
         let state = self.state.clone();
         let chat_id = item.id.clone();
+        let (warm_state, warm_chat_id) = (self.state.clone(), item.id.clone());
         let dragged = DraggedChat {
             id: item.id.clone(),
             title: item.title.clone(),
@@ -1144,6 +1145,11 @@ impl SidebarView {
             .child(avatar)
             .child(lines)
             .child(more_button)
+            .on_hover(move |hovered, _, cx| {
+                if *hovered {
+                    warm_state.update(cx, |state, _| state.warm_chat(&warm_chat_id));
+                }
+            })
             .on_click(move |_, _, cx| {
                 let selection = Selection::Chat(chat_id.clone());
                 state.update(cx, |state, cx| state.select(selection, cx));
@@ -1976,7 +1982,7 @@ fn team_menu(
                         TeamMenuItem::AddChannel => {}
                         TeamMenuItem::Show => state.set_team_shown(&action_id, true, cx),
                         TeamMenuItem::Hide => state.set_team_shown(&action_id, false, cx),
-                        TeamMenuItem::ManageTeam => state.manage_team_in_browser(&action_id, cx),
+                        TeamMenuItem::ManageTeam => state.open_manage_team(&action_id, cx),
                         TeamMenuItem::CopyLink => state.copy_team_link(&action_id, cx),
                     });
                 }),

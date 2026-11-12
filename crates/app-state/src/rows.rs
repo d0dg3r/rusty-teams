@@ -194,6 +194,7 @@ pub struct MessageRow {
     pub reactions: Vec<ReactionChip>,
     pub images: Vec<ImageRef>,
     pub local_images: Vec<LocalImage>,
+    pub sent_previews: Vec<LocalImage>,
     pub files: Vec<FileCard>,
     pub link_preview: Option<LinkPreview>,
     pub meeting_link: Option<String>,
@@ -779,6 +780,7 @@ fn event_row(
         reactions: Vec::new(),
         images: Vec::new(),
         local_images: Vec::new(),
+        sent_previews: Vec::new(),
         files: Vec::new(),
         link_preview: None,
         meeting_link: None,
@@ -919,6 +921,7 @@ fn message_row_with(
         reactions: reaction_chips(&visible_reactions(record, context), context),
         images,
         local_images: Vec::new(),
+        sent_previews: Vec::new(),
         files: files(record),
         link_preview: link_preview(record),
         meeting_link: (!record.deleted)

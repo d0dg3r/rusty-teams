@@ -32,12 +32,14 @@ pub mod google_calendar_sync;
 pub mod image_view_gallery;
 pub mod importance;
 pub mod local_previews;
+pub mod manage_team;
 pub mod message_actions;
 pub mod notice;
 pub mod notify;
 pub mod outbox;
 pub mod outgoing;
 pub mod own_status;
+pub mod absence_notice;
 pub mod pending_rows;
 pub mod people;
 pub mod post_follow;
@@ -60,6 +62,7 @@ pub mod task_dialog;
 pub mod team_admin;
 pub mod translation_actions;
 pub mod typing;
+mod warm_chats;
 pub mod urgent_ack;
 
 pub use app_base::{

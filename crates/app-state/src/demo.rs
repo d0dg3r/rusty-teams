@@ -921,6 +921,17 @@ pub fn seed(store: &Store) {
     seed_agent_access(store);
 }
 
+pub fn agent_meeting_draft() -> mcp::MeetingDraft {
+    let start = at(-1, 10, 0);
+    mcp::MeetingDraft {
+        subject: "Release 42 go/no-go".to_owned(),
+        start,
+        end: start + Duration::minutes(30),
+        attendees: vec!["mara.lindqvist@example.com".to_owned(), "jonas.ortega@example.com".to_owned()],
+        description: "Walk through the regression results and decide on Friday's rollout.\nOwner: Mara".to_owned(),
+    }
+}
+
 const AGENT_DEMO_PROPOSAL: &str = "I ran the regression suite on staging: 412 passed, 0 failed. The release candidate is good to ship, @Mara Lindqvist.";
 
 fn seed_agent_access(store: &Store) {
@@ -932,9 +943,10 @@ fn seed_agent_access(store: &Store) {
             enabled: true,
             chats: selected(&[RELEASE_CHAT, "demo-chat-mara", "demo-chat-meeting-standup"]),
             channels: selected(&["demo-channel-1-1"]),
-            propose: true,
+            write: true,
             calendar: true,
             transcripts: false,
+            meetings: true,
             ..mcp::AgentPolicy::default()
         },
     );
@@ -2430,6 +2442,19 @@ fn encode_rgb(width: usize, height: usize, pixel: impl Fn(usize, usize) -> [u8; 
     png_chunk(&mut png, b"IDAT", &zlib);
     png_chunk(&mut png, b"IEND", &[]);
     png
+}
+
+pub fn team_members() -> Vec<crate::manage_team::TeamMember> {
+    std::iter::once((DEMO_USER_ID, DEMO_USER_NAME, DEMO_USER_EMAIL))
+        .chain(PEOPLE_DIRECTORY.iter().map(|(user_id, name, _, email)| (*user_id, *name, *email)))
+        .enumerate()
+        .map(|(index, (user_id, name, email))| crate::manage_team::TeamMember {
+            user_id: Some(user_id.to_owned()),
+            name: name.to_owned(),
+            email: Some(email.to_owned()),
+            owner: index == 1 || index == 3,
+        })
+        .collect()
 }
 
 #[cfg(test)]
