@@ -59,7 +59,7 @@ Verifiziert auf Forgejo-Release und GitHub-Spiegel:
 | `*-x86_64.pkg.tar.zst` | ok (Layout `rusty-teams` + Symlink `teams`) |
 | `*-x86_64.flatpak` | best effort — diesmal nicht veröffentlicht |
 | `*-windows-amd64.exe` | ok (Forgejo Publish + GitHub-Mirror) |
-| `*-windows-arm64.exe` | Runner `win-02` / Label `windows-arm64` offline; WiFi-WoL greift nicht (Modern Standby). Nach Power-On: `workflow_dispatch` `platforms=windows-arm` |
+| `*-windows-arm64.exe` | Homelab `win-02` offline (WiFi-WoL greift nicht). Smoke-Fallback: `.github/workflows/smoke-windows-arm.yml` auf `windows-11-arm` (danach löschen). `.cargo/config.toml` braucht `+crt-static` auch für `aarch64-pc-windows-msvc`. |
 | `*-macos-universal.zip` | ok |
 
 Reusable Windows-Jobs brauchen `if: … \|\| github.event_name == 'workflow_call'` und `GH_MIRROR_TOKEN` (nicht `GITHUB_MIRROR_TOKEN` als Secret-Name).
