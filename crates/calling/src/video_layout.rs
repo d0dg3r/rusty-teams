@@ -90,6 +90,7 @@ pub fn offer_plan() -> OfferPlan {
     OfferPlan {
         screen_share_mids: vec![SHARE_MID.to_owned()],
         gallery_mids: Vec::new(),
+        fold_groups: Vec::new(),
     }
 }
 
@@ -97,6 +98,7 @@ pub fn one_to_one_plan() -> OfferPlan {
     OfferPlan {
         screen_share_mids: vec![ONE_TO_ONE_SHARE_MID.to_owned()],
         gallery_mids: Vec::new(),
+        fold_groups: Vec::new(),
     }
 }
 

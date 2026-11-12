@@ -108,6 +108,8 @@ const HEALTH_EVERY_TICKS: u32 = TICKS_PER_SECOND * 2;
 const BOT_PREFIX: &str = "28:";
 const RECORDING_START_LIMIT: Duration = Duration::from_secs(40);
 const SAME_PEER_ANSWER_LIMIT: Duration = Duration::from_secs(40);
+/// Teams sometimes answers a few seconds after the soft limit; keep the local offer until this grace ends.
+const SAME_PEER_LATE_GRACE: Duration = Duration::from_secs(15);
 const GATHERING_LIMIT: Duration = Duration::from_secs(5);
 const GATHERING_QUIET: Duration = Duration::from_millis(500);
 const GATHERING_POLL: Duration = Duration::from_millis(50);
@@ -997,6 +999,7 @@ async fn drive(
         control.video.clone(),
         control.updates(),
     );
+    local_video.attach_timeline(timeline.clone());
     let mut camera_choice = options.camera.clone();
     if options.start_camera {
         match local_video.preview_camera(&camera_choice) {
@@ -1349,6 +1352,7 @@ async fn drive(
     let mut send_requests = RequestFilter::default();
     let mut send_capabilities = SendCapabilityReporter::default();
     let mut same_peer_deadline: Option<Instant> = None;
+    let mut same_peer_grace_until: Option<Instant> = None;
     let mut meeting_chat = conversation.chat_thread.clone();
     if let Some(thread) = &meeting_chat {
         control.send(CallUpdate::MeetingChat(thread.clone()));
@@ -1569,6 +1573,7 @@ async fn drive(
                             && let Some(pending) = same_peer.take()
                         {
                             same_peer_deadline = None;
+                            same_peer_grace_until = None;
                             let applied = match pending.change {
                                 Change::Hold(_) => apply_hold_answer(&current.peer, &answer.sdp, &pending.signaled, &pending.browser_offer).await,
                                 Change::Camera(_) | Change::Share(_) => apply_answer(&current.peer, &answer.sdp, &pending.signaled, &pending.browser_offer).await,
@@ -1649,6 +1654,7 @@ async fn drive(
                             && let Some(pending) = same_peer.take()
                         {
                             same_peer_deadline = None;
+                            same_peer_grace_until = None;
                             negotiator.same_peer_offer_failed();
                             rollback_offer(&current.peer).await;
                             timeline.record("glare", "the remote offer is answered first, ours goes out again after");
@@ -1660,6 +1666,7 @@ async fn drive(
                             MediaAction::AnswerOnNewPeer => {
                                 if let Some(pending) = same_peer.take() {
                                     same_peer_deadline = None;
+                                    same_peer_grace_until = None;
                                     timeline.record("same-peer offer", "superseded by the escalation offer");
                                     rollback_offer(&current.peer).await;
                                     defer_to_new_peer(pending.change, &mut deferred_changes, &mut local_video, control);
@@ -1960,6 +1967,7 @@ async fn drive(
                     Ok(CallEvent::Rejection(body)) => match negotiator.on_rejection() {
                         RejectedOffer::SamePeer => {
                             same_peer_deadline = None;
+                            same_peer_grace_until = None;
                             if let Some(pending) = same_peer.take() {
                                 rollback_offer(&current.peer).await;
                                 if is_glare_rejection(&body) {
@@ -2179,6 +2187,7 @@ async fn drive(
                                         timeline.record_sdp("local offer", &signaled.sdp);
                                         same_peer = Some(SamePeerOffer { browser_offer, signaled, change: Change::Camera(true), reply_tags });
                                         same_peer_deadline = Some(Instant::now() + SAME_PEER_ANSWER_LIMIT);
+                                        same_peer_grace_until = None;
                                     }
                                     Err(error) => {
                                         timeline.record("camera offer failed", error.to_string());
@@ -2201,6 +2210,7 @@ async fn drive(
                                 timeline.record_sdp("local offer", &signaled.sdp);
                                 same_peer = Some(SamePeerOffer { browser_offer, signaled, change: Change::Camera(false), reply_tags });
                                 same_peer_deadline = Some(Instant::now() + SAME_PEER_ANSWER_LIMIT);
+                                same_peer_grace_until = None;
                             }
                             Err(error) => {
                                 timeline.record("camera offer failed", error.to_string());
@@ -2301,6 +2311,7 @@ async fn drive(
                                         timeline.record_sdp("local offer", &signaled.sdp);
                                         same_peer = Some(SamePeerOffer { browser_offer, signaled, change: Change::Share(true), reply_tags });
                                         same_peer_deadline = Some(Instant::now() + SAME_PEER_ANSWER_LIMIT);
+                                        same_peer_grace_until = None;
                                     }
                                     Err(error) => {
                                         timeline.record("share offer failed", error.to_string());
@@ -2349,6 +2360,7 @@ async fn drive(
                                 timeline.record_sdp("local offer", &signaled.sdp);
                                 same_peer = Some(SamePeerOffer { browser_offer, signaled, change: Change::Share(false), reply_tags });
                                 same_peer_deadline = Some(Instant::now() + SAME_PEER_ANSWER_LIMIT);
+                                same_peer_grace_until = None;
                             }
                             Err(error) => timeline.record("share offer failed", error.to_string()),
                         }
@@ -2577,6 +2589,7 @@ async fn drive(
                             timeline.record_sdp("local offer", &signaled.sdp);
                             same_peer = Some(SamePeerOffer { browser_offer, signaled, change: Change::Hold(hold), reply_tags });
                             same_peer_deadline = Some(Instant::now() + SAME_PEER_ANSWER_LIMIT);
+                            same_peer_grace_until = None;
                         }
                         Err(error) => {
                             timeline.record("hold failed", error.to_string());
@@ -2790,12 +2803,13 @@ async fn drive(
                     timeline.record(
                         "stats",
                         format!(
-                            "in packets={} bytes={} level={:.3} rms={decoded_rms:.3} tone={ratio:.2} out packets={} mic={:.3} erle={:.1} dtls={} video in packets={} decoded={} {}x{} out packets={} encoded={} {}x{} mixer reports {} (rtt {:.0} ms) out bytes={} sources={:?} video senders={:?}{}",
+                            "in packets={} bytes={} level={:.3} rms={decoded_rms:.3} tone={ratio:.2} out packets={} mic={:.3} erle={:.1} dtls={} video in packets={} decoded={} {}x{} out packets={} encoded={} {}x{} mixer reports {} (rtt {:.0} ms) out bytes={} sources={:?} video senders={:?}{}{}",
                             snapshot.inbound_packets, snapshot.inbound_bytes, snapshot.audio_level, snapshot.outbound_packets, snapshot.local_level, snapshot.echo_return_loss_enhancement, snapshot.dtls_state,
                             snapshot.video.inbound_packets, snapshot.video.inbound_frames_decoded, snapshot.video.inbound_width, snapshot.video.inbound_height,
                             snapshot.video.outbound_packets, snapshot.video.outbound_frames_encoded, snapshot.video.outbound_width, snapshot.video.outbound_height,
                             snapshot.video.remote_reports, snapshot.video.remote_round_trip_ms, snapshot.outbound_bytes, snapshot.source_levels, snapshot.video_senders,
-                            snapshot.share_receive.as_ref().filter(|_| snapshot.share_inbound_packets > 0).map(ShareReceive::summary).unwrap_or_default()
+                            snapshot.share_receive.as_ref().filter(|_| snapshot.share_inbound_packets > 0).map(ShareReceive::summary).unwrap_or_default(),
+                            local_video.camera_capture_summary().unwrap_or_default()
                         ),
                     );
                 }
@@ -2871,6 +2885,7 @@ async fn drive(
                             timeline.record_sdp("local offer", &signaled.sdp);
                             same_peer = Some(SamePeerOffer { browser_offer, signaled, change: resend.change, reply_tags });
                             same_peer_deadline = Some(Instant::now() + SAME_PEER_ANSWER_LIMIT);
+                            same_peer_grace_until = None;
                         }
                         Err(error) => {
                             timeline.record("offer after glare failed", error.to_string());
@@ -2881,6 +2896,16 @@ async fn drive(
             }
             _ = sleep_until(same_peer_deadline.unwrap_or_else(far_future)), if same_peer_deadline.is_some() => {
                 same_peer_deadline = None;
+                if same_peer.is_some() {
+                    same_peer_grace_until = Some(Instant::now() + SAME_PEER_LATE_GRACE);
+                    timeline.record(
+                        "same-peer offer",
+                        "no answer yet, waiting a little longer",
+                    );
+                }
+            }
+            _ = sleep_until(same_peer_grace_until.unwrap_or_else(far_future)), if same_peer_grace_until.is_some() => {
+                same_peer_grace_until = None;
                 if let Some(pending) = same_peer.take() {
                     timeline.record("same-peer offer", "no answer in time");
                     negotiator.same_peer_offer_failed();
