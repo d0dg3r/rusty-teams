@@ -14,6 +14,9 @@ optdepends=(
   'xdg-desktop-portal-kde: Wayland ScreenCast on KDE'
   'xdg-desktop-portal-gnome: Wayland ScreenCast on GNOME'
 )
+# Prebuilt release binary is already stripped. Arch's default OPTIONS=(strip debug)
+# otherwise moves/empties the payload into rusty-teams-debug (~4 KiB main pkg).
+options=('!strip' '!debug')
 source=(
   'rusty-teams.bin'
   'rusty-teams.desktop'

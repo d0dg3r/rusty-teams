@@ -34,11 +34,35 @@ install -m 644 "$ICON" "$STAGE/rusty-teams.png"
 mkdir -p "$ROOT/dist"
 out="$ROOT/dist/rusty-teams-${VERSION}-x86_64.pkg.tar.zst"
 
+# Prefer the main package over rusty-teams-debug-*.pkg.tar.zst.
+pick_main_pkg() {
+  local dir="$1"
+  local built
+  built="$(
+    find "$dir" -maxdepth 1 -type f -name 'rusty-teams-*.pkg.tar.zst' \
+      ! -name 'rusty-teams-debug-*' | head -1
+  )"
+  [[ -n "$built" ]] || {
+    echo "makepkg produced no main package in $dir" >&2
+    find "$dir" -maxdepth 1 -name '*.pkg.tar.zst' -ls >&2 || true
+    return 1
+  }
+  local size
+  size="$(stat -c '%s' "$built")"
+  # Desktop + icon alone are a few KiB; a real payload is tens of MiB.
+  if [[ "$size" -lt 1048576 ]]; then
+    echo "Arch package looks empty (${size} bytes): $built" >&2
+    tar -tvf "$built" >&2 || true
+    return 1
+  fi
+  printf '%s\n' "$built"
+}
+
 if command -v makepkg >/dev/null 2>&1; then
   (cd "$STAGE" && makepkg -f --noconfirm)
-  built="$(find "$STAGE" -name 'rusty-teams-*.pkg.tar.zst' | head -1)"
+  built="$(pick_main_pkg "$STAGE")"
   cp -f "$built" "$out"
-  echo "Wrote $out"
+  echo "Wrote $out ($(stat -c '%s' "$out") bytes)"
   exit 0
 fi
 
@@ -71,7 +95,6 @@ $ENGINE exec -u root "$cid" bash -lc '
   sudo -u builduser makepkg -df --noconfirm
 '
 $ENGINE cp "$cid:/build/." "$OUTDIR/"
-built="$(find "$OUTDIR" -name 'rusty-teams-*.pkg.tar.zst' | head -1)"
-[[ -n "$built" ]] || { echo "makepkg produced no package" >&2; exit 1; }
+built="$(pick_main_pkg "$OUTDIR")"
 cp -f "$built" "$out"
-echo "Wrote $out"
+echo "Wrote $out ($(stat -c '%s' "$out") bytes)"
