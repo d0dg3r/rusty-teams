@@ -1959,6 +1959,16 @@ mod tests {
     }
 
     #[test]
+    fn portal_share_works_without_a_source_list() {
+        let mut model = connected_model();
+        assert!(model.share_sources.is_empty());
+        assert!(!model.can_share());
+        model.apply(CallUpdate::SharePicker(SharePicker::Portal));
+        assert!(model.uses_portal_picker());
+        assert!(model.can_share());
+    }
+
+    #[test]
     fn lobby_guests_are_listed_for_organizers_who_may_admit() {
         let mut model = meeting_with_me();
         model.apply(CallUpdate::State(CallState::Connected {

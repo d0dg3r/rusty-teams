@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0-joe.7] - 2026-11-12
+
+### Added
+
+- macOS managed Chrome sign-in: starts Chrome/Chromium on debug port 9222 with a
+  profile under Application Support, shows the window for login, then returns to
+  headless (same path as Linux); `--endpoint` still attaches to an external Chrome.
+- macOS screen share uses the ScreenCaptureKit system dialog (no empty source list).
+
+### Changed
+
+- Non-Windows mic Auto/Low remain on the ADM device track (Pulse / CoreAudio);
+  OpenSpec baseline covers `macos-sign-in`, `macos-call-audio`, and screen-share
+  on macOS.
+
 ## [0.3.0-joe.6] - 2026-11-12
 
 ### Added

@@ -232,7 +232,7 @@ pub fn start_screen_capture(
     .map_err(|error| Error::Webrtc(format!("screen thread: {error}")))
 }
 
-/// Where the share menu gets its sources. Wayland uses the desktop dialog.
+/// Where the share menu gets its sources. Wayland and macOS use a system dialog.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SharePicker {
     List,
@@ -240,6 +240,13 @@ pub enum SharePicker {
 }
 
 pub fn share_picker_for(wayland_display: Option<&str>) -> SharePicker {
+    share_picker_for_host(cfg!(target_os = "macos"), wayland_display)
+}
+
+pub fn share_picker_for_host(macos: bool, wayland_display: Option<&str>) -> SharePicker {
+    if macos {
+        return SharePicker::Portal;
+    }
     match wayland_display {
         Some(value) if !value.is_empty() => SharePicker::Portal,
         _ => SharePicker::List,
@@ -400,13 +407,23 @@ mod thumbnail_tests {
 
 #[cfg(test)]
 mod portal_mode_tests {
-    use super::{ShareKind, SharePicker, ShareSource, share_picker_for, share_sources_for_menu};
+    use super::{
+        ShareKind, SharePicker, ShareSource, share_picker_for_host, share_sources_for_menu,
+    };
 
     #[test]
     fn portal_mode_follows_wayland_display_and_skips_the_menu_list() {
-        assert_eq!(share_picker_for(None), SharePicker::List);
-        assert_eq!(share_picker_for(Some("")), SharePicker::List);
-        assert_eq!(share_picker_for(Some("wayland-1")), SharePicker::Portal);
+        assert_eq!(share_picker_for_host(false, None), SharePicker::List);
+        assert_eq!(share_picker_for_host(false, Some("")), SharePicker::List);
+        assert_eq!(
+            share_picker_for_host(false, Some("wayland-1")),
+            SharePicker::Portal
+        );
+        assert_eq!(share_picker_for_host(true, None), SharePicker::Portal);
+        assert_eq!(
+            share_picker_for_host(true, Some("")),
+            SharePicker::Portal
+        );
         let sources = vec![ShareSource {
             id: 1,
             kind: ShareKind::Screen,
