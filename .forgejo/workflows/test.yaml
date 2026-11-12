@@ -1,0 +1,56 @@
+# Forgejo: cargo test on push to main. GitHub runs no CI — mirror only.
+
+name: Test
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CC: clang-21
+      CXX: clang++-21
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: clang-21
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.forgejo/actions/setup-linux
+
+      - uses: ./.forgejo/actions/setup-rust
+
+      - name: Tests
+        run: cargo test
+
+  windows:
+    name: Windows
+    runs-on: ci-runner-windows-01
+    timeout-minutes: 90
+    env:
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      GIT_SSL_NO_VERIFY: "true"
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.forgejo/actions/setup-rust
+
+      - uses: ./.forgejo/actions/setup-windows
+
+      - name: Tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test \
+            --config "patch.crates-io.gpui-pre-windows.path=\"$GPUI_PRE_WINDOWS_PATCHED\""

@@ -1,27 +1,20 @@
-# Release-Binaries entstehen auf Forgejo (.forgejo/workflows/release*.yaml)
-# und werden nach GitHub gespiegelt. Dieser Workflow baut nicht mehr —
-# siehe GITHUB_RELEASE.md.
+# GitHub is Offsite-Spiegel only. CI and releases run on Forgejo
+# (devops-geek/rusty-teams → .forgejo/workflows/). This file exists so a
+# mirrored empty .github/workflows/ does not confuse forks; it never runs
+# compile or test jobs.
 name: Build
 
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
 
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   skipped:
-    name: Builds moved to Forgejo
+    name: Builds and tests run on Forgejo
     runs-on: ubuntu-latest
     steps:
-      - name: Point to Forgejo SoT
-        run: |
-          echo "Release compiles run on Forgejo (devops-geek/rusty-teams)."
-          echo "Assets are mirrored to this GitHub repo via GITHUB_MIRROR_TOKEN."
-          echo "See GITHUB_RELEASE.md"
+      - run: |
+          echo "SoT: https://forgejo.lan/devops-geek/rusty-teams"
+          echo "See GITHUB_RELEASE.md — GitHub is mirror only."

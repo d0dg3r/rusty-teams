@@ -46,7 +46,7 @@ Publish-Skript: [`scripts/ci_forgejo_publish_release.sh`](scripts/ci_forgejo_pub
 
 ## GitHub Actions
 
-[`.github/workflows/build.yml`](.github/workflows/build.yml) baut **keine** Release-Binaries mehr (Notes-only / abgeschaltet). Tests können weiter unter `.github/workflows/test.yml` laufen.
+GitHub ist **nur Spiegel** — keine Tests, keine Release-Compiles. CI: [`.forgejo/workflows/test.yaml`](.forgejo/workflows/test.yaml) (Push `main`). Releases: [`.forgejo/workflows/release.yaml`](.forgejo/workflows/release.yaml). Die Dateien unter `.github/workflows/` sind Stub ohne Push-Trigger.
 
 ## Smoke `v0.3.0-joe.1` (2026-11-12)
 
