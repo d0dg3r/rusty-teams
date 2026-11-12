@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0-joe.8] - 2026-11-12
+
+### Fixed
+
+- macOS release build links the `browser` crate, so managed Chrome sign-in compiles
+  on the macOS runner (`v0.3.0-joe.7` failed with an unresolved `browser` crate).
+
 ## [0.3.0-joe.7] - 2026-11-12
 
 ### Added
