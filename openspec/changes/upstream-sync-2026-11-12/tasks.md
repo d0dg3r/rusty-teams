@@ -14,8 +14,8 @@
 
 ## 3. Verify und Integration
 
-- [ ] 3.1 `cargo test` für store, mcp, calling und weitere grünen Suites (Verify: Tests pass)
-- [ ] 3.2 Sync-Branch nach `main` mergen und nach `origin` pushen (Verify: `origin/main` enthält Upstream-Merge)
+- [x] 3.1 `cargo test` für store, mcp, calling und weitere grünen Suites (Verify: Tests pass)
+- [x] 3.2 Sync-Branch nach `main` mergen und nach `origin` pushen (Verify: `origin/main` enthält Upstream-Merge)
 
 ## Workflow follow-up
 
