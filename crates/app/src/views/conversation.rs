@@ -2884,9 +2884,9 @@ impl ConversationView {
         } else if target.as_deref() == Some(key) {
             *target = None;
         }
-        if !hovered && matches!(slot, HoverSlot::Row) && self.toolbar_opened.as_deref() == Some(key)
+        if !hovered && matches!(slot, HoverSlot::Row) && self.toolbar_hovered.as_deref() == Some(key)
         {
-            self.toolbar_opened = None;
+            self.toolbar_hovered = None;
         }
         if hovered
             && matches!(slot, HoverSlot::Row)

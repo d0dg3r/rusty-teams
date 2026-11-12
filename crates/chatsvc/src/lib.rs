@@ -52,9 +52,9 @@ pub use activity_feed::{
 pub use activity_mentions::{MentionActivity, MentionKind, mentions_of};
 pub use bot_profiles::{BotProfile, BotProfiles, parse_bot_profiles};
 pub use calendar::{
-    Attendee, BusyTime, Calendar, CalendarEvent, PersonSchedule, CreatedEvent, DialIn, join_info_text, NewEvent,
-    Reminder, Repeat, Reply, ResponseType, ShowAs, meet_now_join_url, new_event_body,
-    new_event_body_with_join, parse_calendar_events, parse_created_event,
+    Attendee, BusyTime, Calendar, CalendarEvent, CalendarSource, PersonSchedule, CreatedEvent, DialIn,
+    join_info_text, NewEvent, Reminder, Repeat, Reply, ResponseType, ShowAs, meet_now_join_url,
+    new_event_body, new_event_body_with_join, parse_calendar_events, parse_created_event,
 };
 pub use calllog::{CallDirection, CallLogEntry, CallOutcome};
 pub use cards::{
