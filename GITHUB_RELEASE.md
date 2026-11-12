@@ -23,7 +23,7 @@ Workflow: [`.forgejo/workflows/release.yaml`](.forgejo/workflows/release.yaml).
 | Debian / Ubuntu | `ubuntu-latest` | `rusty-teams-<ver>-amd64.deb` |
 | Fedora / RHEL | `ubuntu-latest` | `rusty-teams-<ver>-x86_64.rpm` |
 | Arch | `ubuntu-latest` | `rusty-teams-<ver>-x86_64.pkg.tar.zst` |
-| Flatpak | `ubuntu-latest` | `rusty-teams-<ver>-x86_64.flatpak` |
+| Flatpak | `ubuntu-latest` | `rusty-teams-<ver>-x86_64.flatpak` (best effort; job continues without it) |
 | Windows amd64 | `ci-runner-windows-01` | `rusty-teams-<ver>-windows-amd64.exe` |
 | Windows ARM64 | `windows-arm64` | `rusty-teams-<ver>-windows-arm64.exe` |
 | macOS universal | `macos-arm64` | `rusty-teams-<ver>-macos-universal.zip` |
