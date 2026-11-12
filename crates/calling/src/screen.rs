@@ -240,8 +240,7 @@ pub fn share_sources_for_menu(picker: SharePicker, sources: Vec<ShareSource>) ->
     }
 }
 
-pub const PORTAL_UNAVAILABLE_NOTICE: &str =
-    "Screen sharing needs the desktop share dialog, and it could not open.";
+pub use crate::notices::PORTAL_UNAVAILABLE_NOTICE;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PortalFollowUp {

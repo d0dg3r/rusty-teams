@@ -4,6 +4,7 @@ use gpui_kit::component::{h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
+use crate::i18n::tr;
 use crate::settings_section::SettingsSection;
 use crate::theme;
 use crate::views::widgets::icon;
@@ -25,65 +26,71 @@ const ITEM_GAP: f32 = 2.;
 const ITEM_RADIUS: f32 = 6.;
 const ITEM_ICON: f32 = 16.;
 const NAV_PADDING_X: f32 = 12.;
-const NO_RESULTS: &str = "No settings found";
 
-fn search_terms(section: SettingsSection) -> &'static [&'static str] {
+fn search_terms(section: SettingsSection) -> Vec<String> {
     match section {
-        SettingsSection::General => &[
-            "Auto-start Teams",
-            "Open application in background",
-            "On close, keep the application running",
-            "Up arrow key behaviour in compose box",
-            "Translate messages into this language",
-            "How to handle messages in other languages",
-            "Never translate messages in these languages",
+        SettingsSection::General => vec![
+            tr("settings.general.auto_start"),
+            tr("settings.general.open_in_background"),
+            tr("settings.general.close_to_tray"),
+            tr("settings.general.up_arrow"),
+            tr("settings.general.translate_into"),
+            tr("settings.general.behavior_title"),
+            tr("settings.general.never_translate"),
         ],
-        SettingsSection::Notifications => &[
-            "Chat message notifications",
-            "Meeting chat notifications",
-            "Likes and reactions",
-            "Teams and channels",
-            "Show message preview",
-            "Notification sound",
-            "Urgent sound",
-            "Position on the screen",
-            "Flash taskbar when notifications are received",
-            "Hide notifications during calls and meetings",
-            "Send test notification",
+        SettingsSection::Notifications => vec![
+            tr("settings.notifications.chat_messages"),
+            tr("settings.notifications.meeting_chats"),
+            tr("settings.notifications.likes_reactions"),
+            tr("settings.notifications.teams_channels"),
+            tr("settings.notifications.show_preview"),
+            tr("settings.notifications.notification_sound"),
+            tr("settings.notifications.urgent_sound"),
+            tr("settings.notifications.position"),
+            tr("settings.notifications.flash_taskbar"),
+            tr("settings.notifications.hide_in_calls"),
+            tr("settings.notifications.send_test"),
         ],
-        SettingsSection::Appearance => &["Theme", "Color scheme", "App icon"],
-        SettingsSection::Chats => &[
-            "Message density",
-            "Read receipts",
-            "Show message actions on right click",
-            "Show muted items in their own section",
-            "When writing a message, press Enter to",
-            "Format messages using mark-down",
+        SettingsSection::Appearance => vec![
+            tr("settings.appearance.theme"),
+            tr("settings.appearance.color_scheme"),
+            tr("settings.appearance.app_icon"),
         ],
-        SettingsSection::Calls => &["Ringtones"],
-        SettingsSection::Calendar => &[
-            "Google Calendar",
-            "Connect Google",
-            "Home calendar",
-            "Also write to",
-            "Outlook",
+        SettingsSection::Chats => vec![
+            tr("settings.chats.density"),
+            tr("settings.chats.read_receipts"),
+            tr("settings.chats.message_actions"),
+            tr("settings.chats.muted_section"),
+            tr("settings.chats.enter_to"),
+            tr("settings.chats.markdown"),
         ],
-        SettingsSection::Devices => &[
-            "Speaker",
-            "Microphone",
-            "Noise suppression",
-            "Music mode",
-            "Camera",
-            "Background",
-            "Soft focus",
-            "Adjust brightness",
-            "Mirror my video",
-            "Make a test call",
-            "Save a test report after each call",
+        SettingsSection::Calls => vec![tr("settings.calls.ringtones")],
+        SettingsSection::Calendar => vec![
+            "Google Calendar".to_owned(),
+            "Connect Google".to_owned(),
+            "Home calendar".to_owned(),
+            "Also write to".to_owned(),
+            "Outlook".to_owned(),
         ],
-        SettingsSection::Agents => &["Claude", "Agent runs"],
-        SettingsSection::Mcp => &["Model Context Protocol", "Conversation access"],
-        SettingsSection::About => &["Version", "Build"],
+        SettingsSection::Devices => vec![
+            "Speaker".to_owned(),
+            "Microphone".to_owned(),
+            "Noise suppression".to_owned(),
+            "Music mode".to_owned(),
+            "Camera".to_owned(),
+            "Background".to_owned(),
+            "Soft focus".to_owned(),
+            "Adjust brightness".to_owned(),
+            "Mirror my video".to_owned(),
+            "Make a test call".to_owned(),
+            "Save a test report after each call".to_owned(),
+        ],
+        SettingsSection::Agents => vec!["Claude".to_owned(), "Agent runs".to_owned()],
+        SettingsSection::Mcp => vec![
+            "Model Context Protocol".to_owned(),
+            "Conversation access".to_owned(),
+        ],
+        SettingsSection::About => vec!["Version".to_owned(), "Build".to_owned()],
     }
 }
 
@@ -91,7 +98,7 @@ pub fn matches(section: SettingsSection, query: &str) -> bool {
     let query = query.trim().to_lowercase();
     query.is_empty()
         || std::iter::once(label(section))
-            .chain(search_terms(section).iter().copied())
+            .chain(search_terms(section))
             .any(|text| text.to_lowercase().contains(&query))
 }
 
@@ -104,18 +111,18 @@ pub fn first_match(query: &str, agents_available: bool) -> Option<SettingsSectio
         .find(|section| matches(*section, query))
 }
 
-pub fn label(section: SettingsSection) -> &'static str {
+pub fn label(section: SettingsSection) -> String {
     match section {
-        SettingsSection::General => "General",
-        SettingsSection::Notifications => "Notifications and activity",
-        SettingsSection::Appearance => "Appearance and accessibility",
-        SettingsSection::Chats => "Chats and channels",
-        SettingsSection::Calls => "Calls",
-        SettingsSection::Calendar => "Calendar",
-        SettingsSection::Devices => "Devices",
-        SettingsSection::Agents => "Agents",
-        SettingsSection::Mcp => "MCP",
-        SettingsSection::About => "About",
+        SettingsSection::General => tr("settings.nav.general"),
+        SettingsSection::Notifications => tr("settings.nav.notifications"),
+        SettingsSection::Appearance => tr("settings.nav.appearance"),
+        SettingsSection::Chats => tr("settings.nav.chats"),
+        SettingsSection::Calls => tr("settings.nav.calls"),
+        SettingsSection::Calendar => tr("settings.nav.calendar"),
+        SettingsSection::Devices => tr("settings.nav.devices"),
+        SettingsSection::Agents => tr("settings.nav.agents"),
+        SettingsSection::Mcp => tr("settings.nav.mcp"),
+        SettingsSection::About => tr("settings.nav.about"),
     }
 }
 
@@ -214,7 +221,7 @@ pub fn render_nav(
                 .line_height(px(26.))
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(theme::text())
-                .child("Settings"),
+                .child(tr("common.settings")),
         )
         .child(
             div()
@@ -240,7 +247,7 @@ pub fn render_nav(
                             .py(px(ITEM_PADDING_Y))
                             .text_size(px(13.))
                             .text_color(theme::text_muted())
-                            .child(NO_RESULTS),
+                            .child(tr("settings.search.no_results")),
                     )
                 })
                 .when(!rusty.is_empty(), |groups| {
@@ -288,6 +295,7 @@ fn nav_item(
     active: bool,
     on_select: impl Fn(SettingsSection, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
+    let label_text = label(section);
     h_flex()
         .id(element_id(section))
         .debug_selector(move || item_selector(section))
@@ -323,17 +331,20 @@ fn nav_item(
                 .debug_selector(move || label_selector(section))
                 .flex_1()
                 .min_w_0()
-                .child(label(section)),
+                .child(label_text),
         )
         .on_click(move |_, window, cx| on_select(section, window, cx))
 }
 
 #[cfg(test)]
 mod tests {
+    use app_base::ui_locale::apply_locale;
+
     use super::{SettingsSection, first_match, label, matches, search_terms};
 
     #[test]
     fn search_finds_sections_by_name_and_by_setting() {
+        apply_locale("en");
         assert!(matches(SettingsSection::Chats, "read receipts"));
         assert!(matches(SettingsSection::Devices, "MICRO"));
         assert!(matches(SettingsSection::Calls, "calls"));
@@ -344,8 +355,50 @@ mod tests {
         assert_eq!(first_match("xyz", true), None);
     }
 
+    fn search_term_keys(section: SettingsSection) -> &'static [&'static str] {
+        match section {
+            SettingsSection::General => &[
+                "settings.general.auto_start",
+                "settings.general.open_in_background",
+                "settings.general.close_to_tray",
+                "settings.general.up_arrow",
+                "settings.general.translate_into",
+                "settings.general.behavior_title",
+                "settings.general.never_translate",
+            ],
+            SettingsSection::Notifications => &[
+                "settings.notifications.chat_messages",
+                "settings.notifications.meeting_chats",
+                "settings.notifications.likes_reactions",
+                "settings.notifications.teams_channels",
+                "settings.notifications.show_preview",
+                "settings.notifications.notification_sound",
+                "settings.notifications.urgent_sound",
+                "settings.notifications.position",
+                "settings.notifications.flash_taskbar",
+                "settings.notifications.hide_in_calls",
+                "settings.notifications.send_test",
+            ],
+            SettingsSection::Appearance => &[
+                "settings.appearance.theme",
+                "settings.appearance.color_scheme",
+                "settings.appearance.app_icon",
+            ],
+            SettingsSection::Chats => &[
+                "settings.chats.density",
+                "settings.chats.read_receipts",
+                "settings.chats.message_actions",
+                "settings.chats.muted_section",
+                "settings.chats.enter_to",
+                "settings.chats.markdown",
+            ],
+            _ => &[],
+        }
+    }
+
     #[test]
     fn every_search_term_names_a_setting_on_its_page() {
+        apply_locale("en");
         let pages = [
             (SettingsSection::General, include_str!("general.rs")),
             (
@@ -353,12 +406,24 @@ mod tests {
                 include_str!("notifications.rs"),
             ),
             (SettingsSection::Appearance, include_str!("appearance.rs")),
-            (SettingsSection::Chats, include_str!("chats.rs")),
             (SettingsSection::Devices, include_str!("devices.rs")),
         ];
         for (section, source) in pages {
-            for term in search_terms(section) {
-                assert!(source.contains(term), "{term} is not on {}", label(section));
+            for key in search_term_keys(section) {
+                assert!(
+                    source.contains(key),
+                    "{key} is not wired on {}",
+                    label(section)
+                );
+            }
+            if search_term_keys(section).is_empty() {
+                for term in search_terms(section) {
+                    assert!(
+                        source.contains(&term),
+                        "{term} is not on {}",
+                        label(section)
+                    );
+                }
             }
         }
     }

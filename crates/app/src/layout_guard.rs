@@ -1523,7 +1523,7 @@ mod frames {
                 f32::from(
                     window
                         .text_system()
-                        .shape_line(text.into(), px(NAV_LABEL_SIZE), &[run], None)
+                        .shape_line(text.clone().into(), px(NAV_LABEL_SIZE), &[run], None)
                         .width,
                 )
             });

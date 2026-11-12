@@ -15,6 +15,7 @@ use gpui_kit::component::input::{InputEvent, InputState};
 use gpui_kit::*;
 
 use super::ConversationView;
+use crate::i18n::tr;
 use crate::app_state::{AppState, Selection};
 use crate::channel_files::SharedContent;
 use crate::demo_recap;
@@ -480,10 +481,10 @@ impl ConversationView {
         window.open_alert_dialog(cx, move |alert, _, _| {
             let view = view.clone();
             let cancel = Button::new("recap-delete-cancel")
-                .label("Cancel")
+                .label(tr("common.cancel"))
                 .on_click(|_, window, cx| window.close_dialog(cx));
             let delete = Button::new("recap-delete-confirm")
-                .label("Delete")
+                .label(tr("common.delete"))
                 .danger()
                 .on_click(move |_, window, cx| {
                     view.update(cx, |this, cx| this.delete_recording(cx)).ok();

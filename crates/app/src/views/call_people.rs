@@ -18,6 +18,7 @@ use super::call_organizer::{pill, tile_menu};
 use super::call_view::{BANNER_HEIGHT, CHAT_PANEL_WIDTH, MENU_WIDTH, round_control};
 use super::scroll_edge::with_top_edge;
 use super::widgets::{Corner, corner_badge, count_badge, icon};
+use crate::i18n::tr;
 use crate::app_state::AppState;
 use crate::call::{
     ActiveCall, CallModel, OptionsDialog, PeopleSections, PersonRow, people_sections,
@@ -222,7 +223,7 @@ fn panel_header(app: &Entity<AppState>, model: &CallModel, count: usize) -> Div 
         .when(model.can_invite(), |header| {
             header.child(
                 Button::new("call-people-invite")
-                    .label("Invite")
+                    .label(tr("common.invite"))
                     .icon(IconName::UserPlus)
                     .xsmall()
                     .on_click(move |_, window, cx| open_invite_picker(&invite_app, window, cx)),
@@ -469,7 +470,7 @@ fn lobby_section(
                             "call-people-admit-{}",
                             guest.mri
                         )))
-                        .label("Admit")
+                        .label(tr("common.admit"))
                         .xsmall()
                         .on_click(move |_, _, cx| {
                             admit_app.update(cx, |state, cx| {
@@ -482,7 +483,7 @@ fn lobby_section(
                             "call-people-deny-{}",
                             guest.mri
                         )))
-                        .label("Deny")
+                        .label(tr("common.deny"))
                         .ghost()
                         .xsmall()
                         .on_click(move |_, _, cx| {
@@ -796,7 +797,7 @@ pub fn options_dialog(app: &Entity<AppState>, call: &ActiveCall) -> Option<AnyEl
                             .gap(px(8.))
                             .child(
                                 Button::new("options-cancel")
-                                    .label("Cancel")
+                                    .label(tr("common.cancel"))
                                     .ghost()
                                     .on_click(move |_, _, cx| {
                                         cancel_app

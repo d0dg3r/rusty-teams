@@ -19,6 +19,7 @@ use super::join_dialog::open_join_with_id;
 use super::new_meeting_dialog::open_new_meeting;
 use super::rsvp_menu::rsvp_menu;
 use super::scroll_edge::scroll_offset;
+use crate::i18n::tr;
 use crate::app_state::AppState;
 use crate::call::calendar_now::{
     DEFAULT_GRID_VIEWPORT, FollowNow, MANUAL_SCROLL_EPSILON, NOW_BIAS_FRACTION,
@@ -497,7 +498,7 @@ impl CalendarView {
                                 )))
                                 .xsmall()
                                 .primary()
-                                .label("Join")
+                                .label(tr("common.join"))
                                 .on_click(move |_, _, cx| {
                                     cx.stop_propagation();
                                     join_state.update(cx, |state, cx| {

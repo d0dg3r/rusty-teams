@@ -15,11 +15,11 @@ use super::settings_controls::{
     Choice, MenuEntry, PAGE_PADDING, dropdown, link_dropdown, section_header,
 };
 use super::settings_forms::resume_toggle;
+use crate::i18n::{tr, tr_args};
 use crate::runtime;
 use crate::theme;
 use crate::views::widgets::icon;
 
-const NOTE: &str = "Agents get the message, its sender and up to 20 earlier messages. Nothing is sent to Teams without you.";
 const DEFAULT_DISTRO: &str = "Ubuntu";
 const PROMPT_MIN_ROWS: usize = 4;
 const PROMPT_MAX_ROWS: usize = 8;
@@ -587,7 +587,9 @@ impl AgentsSettings {
         let chat = profile.is_chat();
         let mut action = AgentAction::answer_this(&id);
         action.extra_args.clear();
-        action.label = format!("Answer with {}", profile.name);
+        let mut args = std::collections::HashMap::new();
+        args.insert("name".to_owned(), profile.name.clone());
+        action.label = tr_args("agents.settings.answer_with", &args);
         action.id = unique_id(&format!("answer-{id}"), |candidate| {
             self.runs
                 .read(cx)
@@ -618,7 +620,7 @@ impl AgentsSettings {
             .map(|agent| agent.id.clone())
             .unwrap_or_default();
         let mut action = AgentAction::answer_this(&agent_id);
-        action.label = "New action".to_owned();
+        action.label = tr("agents.settings.new_action");
         action.id = unique_id("action", |candidate| {
             settings.actions.iter().any(|action| action.id == candidate)
         });
@@ -647,7 +649,7 @@ fn agent_presets() -> [Preset; 9] {
     fn custom() -> AgentProfile {
         AgentProfile {
             id: "custom".to_owned(),
-            name: "Custom agent".to_owned(),
+            name: tr("agents.settings.custom_agent"),
             environment: Environment::Host,
             output: OutputFormat::Text,
             ..AgentProfile::default()
@@ -857,7 +859,8 @@ impl AgentsSettings {
                 .agents
                 .iter()
                 .find(|agent| agent.id == action.agent_id)
-                .map_or("Unknown agent", |agent| agent.name.as_str());
+                .map(|agent| agent.name.clone())
+                .unwrap_or_else(|| tr("agents.settings.unknown_agent"));
             list_row(
                 ("action-row", index),
                 None,
@@ -907,21 +910,24 @@ impl AgentsSettings {
             .child(
                 Button::new(("add-found", index))
                     .link()
-                    .label("Add")
+                    .label(tr("common.add"))
                     .on_click(move |_, window, cx| {
                         let profile = profile.clone();
                         this.update(cx, |this, cx| this.add_agent(profile, window, cx))
                     }),
             )
         });
+        let on_computer = tr("agents.settings.on_this_computer");
+        let agents_header = tr("agents.settings.agents_header");
+        let actions_header = tr("agents.settings.actions_header");
         v_flex()
             .w_full()
             .child(section_header(
-                "ON THIS COMPUTER",
+                on_computer.clone(),
                 Some(
                     Button::new("rescan-clis")
                         .link()
-                        .label("Scan again")
+                        .label(tr("agents.settings.scan_again"))
                         .on_click(move |_, _, cx| {
                             rescan.update(cx, |this, cx| this.rescan(cx))
                         })
@@ -940,17 +946,17 @@ impl AgentsSettings {
                                 .py(px(8.))
                                 .text_size(px(12.))
                                 .text_color(theme::text_muted())
-                                .child("No Claude, Copilot, Codex, Cursor or Antigravity CLI is waiting to be added."),
+                                .child(tr("agents.settings.no_cli_found")),
                         )
                     }),
             )
             .child(section_header(
-                "AGENTS",
+                agents_header.clone(),
                 Some(link_dropdown("add-agent", "+ Add agent", preset_entries).into_any_element()),
             ))
             .child(v_flex().w_full().px(px(8.)).children(agent_rows))
             .child(section_header(
-                "ACTIONS - IN THIS ORDER IN THE MENU",
+                actions_header,
                 Some(add_action.into_any_element()),
             ))
             .child(v_flex().w_full().px(px(8.)).children(action_rows))
@@ -964,13 +970,13 @@ impl AgentsSettings {
                         div()
                             .text_size(px(14.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child("Write with"),
+                            .child(tr("agents.settings.write_with")),
                     )
                     .child(
                         div()
                             .text_size(px(12.))
                             .text_color(theme::text_muted())
-                            .child("Rewrite in the composer and the chat assistant island. Microsoft Copilot needs the licence."),
+                            .child(tr("agents.settings.rewrite_hint")),
                     )
                     .child(dropdown("write-with", write_label, write_entries)),
             )
@@ -984,7 +990,7 @@ impl AgentsSettings {
                     .text_size(px(12.))
                     .line_height(relative(1.5))
                     .text_color(theme::text_faint())
-                    .child(NOTE),
+                    .child(tr("agents.settings.note")),
             )
     }
 }

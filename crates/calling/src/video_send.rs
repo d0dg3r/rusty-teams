@@ -20,6 +20,7 @@ use crate::camera::{CameraCaptureStats, start_camera};
 use crate::video_quality::VideoQuality;
 use crate::capture::Capture;
 use crate::control::{CallCommand, CallUpdate};
+use crate::notices::{CAMERA_STOPPED_NOTICE, SCREEN_SHARE_STOPPED_NOTICE, notice_with_detail};
 use crate::devices::DeviceChoice;
 use crate::effects::CameraEffects;
 use crate::error::{Error, Result};
@@ -553,10 +554,10 @@ impl LocalVideo {
         .reporting_size(self.screen.frame_size.clone())
     }
 
-    fn report_failure(&self, what: &'static str) -> impl FnOnce(String) + Send + 'static {
+    fn report_failure(&self, notice_key: &'static str) -> impl FnOnce(String) + Send + 'static {
         let updates = self.updates.clone();
         move |reason| {
-            let _ = updates.send(CallUpdate::Notice(format!("{what} stopped: {reason}")));
+            let _ = updates.send(CallUpdate::Notice(notice_with_detail(notice_key, reason)));
         }
     }
 
@@ -615,7 +616,7 @@ impl LocalVideo {
                         }
                     },
                     move |buffer| sink.push(buffer),
-                    self.report_failure("Camera"),
+                    self.report_failure(CAMERA_STOPPED_NOTICE),
                 )?
             }
         })
@@ -735,7 +736,7 @@ impl LocalVideo {
                     source.clone(),
                     self.share_fps.clone(),
                     move |buffer| sink.push(buffer),
-                    self.report_failure("Screen share"),
+                    self.report_failure(SCREEN_SHARE_STOPPED_NOTICE),
                 )?,
             };
             self.screen.capture = Some(capture);

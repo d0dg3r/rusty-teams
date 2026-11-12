@@ -47,6 +47,25 @@ use crate::hold::{
 use crate::meeting_options::{self, OptionWrite};
 use crate::mic_processing::MicSettings;
 use crate::mute::{MuteCommand, MuteEffect};
+use crate::notices::{
+    ADMIT_ALL_FAILED_NOTICE, ADMIT_FAILED_NOTICE, ATTENDEE_SETTINGS_FAILED_NOTICE,
+    BACKGROUND_IMAGE_FAILED_NOTICE, CALL_TRANSFERRED_NOTICE, CAMERA_RESTART_NOTICE,
+    CAMERA_SETTING_FAILED_NOTICE, CAMERA_START_NOTICE, CAPTIONS_JOIN_FAILED_NOTICE,
+    CAPTION_LANGUAGE_FAILED_NOTICE, CHANGE_ROLE_FAILED_NOTICE, CHANGE_RUNNING_NOTICE,
+    CONFIRM_RECORDING_FAILED_NOTICE, CONSENT_FIRST_NOTICE, DENY_FAILED_NOTICE,
+    HOLD_CHANGE_FAILED_NOTICE, HOLD_FAILED_NOTICE, INVITE_PERSON_FAILED_NOTICE,
+    LOWER_ALL_HANDS_FAILED_NOTICE, LOWER_HAND_FAILED_NOTICE, LOWER_THAT_HAND_FAILED_NOTICE,
+    MEETING_LOCK_FAILED_NOTICE, MIC_SETTING_FAILED_NOTICE, MUTE_ALL_FAILED_NOTICE,
+    MUTE_PARTICIPANT_FAILED_NOTICE, NOT_CONNECTED_FOR_VIDEO, ON_HOLD_NOTICE,
+    RAISE_HAND_FAILED_NOTICE, REACTION_FAILED_NOTICE,
+    CAPTIONS_START_FAILED_NOTICE, RECORDING_JOIN_FAILED_NOTICE, RECORDING_NOT_STARTED_NOTICE,
+    RECORDING_START_FAILED_NOTICE, RECORDING_STOP_FAILED_NOTICE,
+    REMOVE_PARTICIPANT_FAILED_NOTICE, RESUME_FAILED_NOTICE, SHARE_QUEUED_NOTICE,
+    SHARE_REFUSED_NOTICE, SHARING_START_NOTICE, SPOTLIGHT_FAILED_NOTICE,
+    STOP_SPOTLIGHT_FAILED_NOTICE, TRANSFER_CALL_FAILED_NOTICE, TRANSFER_FAILED_NOTICE,
+    TRANSFER_NOT_ALLOWED_NOTICE, TRANSFERRING_NOTICE, VIDEO_FAILED_NOTICE,
+    WHITEBOARD_OPEN_FAILED_NOTICE, WHITEBOARDS_MEETINGS_ONLY_NOTICE, notice_with_detail,
+};
 use crate::organizer::{MeetingCapability, Modality, StateStep, Target, modality_steps};
 use crate::outcome::{embedded_end, failed_participant_count, outcome_summary};
 use crate::push::CallNotification;
@@ -118,7 +137,6 @@ const GLARE_RESEND_LIMIT: Duration = Duration::from_secs(3);
 const GLARE_CODE: i64 = 491;
 const RETARGET_WAIT: Duration = Duration::from_secs(20);
 const CAMERA_STREAM: &str = "camera";
-const CONSENT_FIRST_NOTICE: &str = "Accept the recording notice first";
 
 #[derive(Debug, Clone)]
 pub struct CallOptions {
@@ -1219,8 +1237,9 @@ async fn drive(
                 }) {
                     Some(Ok(())) => match local_video.start_camera(&camera_choice) {
                         Ok(()) => sending_camera = true,
-                        Err(error) => control.send(CallUpdate::Notice(format!(
-                            "Camera could not start: {error}"
+                        Err(error) => control.send(CallUpdate::Notice(notice_with_detail(
+                            CAMERA_START_NOTICE,
+                            error,
                         ))),
                     },
                     Some(Err(error)) => {
@@ -1825,13 +1844,15 @@ async fn drive(
                             recording_flow.failed();
                             recording_deadline = None;
                             control.send(CallUpdate::RecordingPending(false));
-                            control.send(CallUpdate::Notice("The recording service could not join".into()));
+                            control.send(CallUpdate::Notice(RECORDING_JOIN_FAILED_NOTICE.into()));
                         }
                         if caption_flow.wanted() && roster.caption_bot().is_none() {
                             timeline.record("caption bot failed", "addParticipantFailure");
                             caption_flow.failed();
                             caption_deadline = None;
-                            control.send(CallUpdate::Captions(CaptionState::Failed("The captions service could not join".into())));
+                            control.send(CallUpdate::Captions(CaptionState::Failed(
+                                CAPTIONS_JOIN_FAILED_NOTICE.into(),
+                            )));
                         }
                     }
                     Ok(CallEvent::ConversationUpdate(body)) => {
@@ -1901,14 +1922,14 @@ async fn drive(
                             completed if completed.succeeded() => {
                                 timeline.record("transfer", "completed");
                                 control.send(CallUpdate::TransferResult { succeeded: true });
-                                control.send(CallUpdate::Notice("Call transferred".into()));
+                                control.send(CallUpdate::Notice(CALL_TRANSFERRED_NOTICE.into()));
                                 advance(state, CallSignal::LocalLeave, control);
                                 break;
                             }
                             TransferEvent::Completed { code, sub_code } => {
                                 timeline.record("transfer failed", format!("code {code} subCode {sub_code}"));
                                 control.send(CallUpdate::TransferResult { succeeded: false });
-                                control.send(CallUpdate::Notice("The transfer did not go through".into()));
+                                control.send(CallUpdate::Notice(TRANSFER_FAILED_NOTICE.into()));
                             }
                         }
                     }
@@ -2199,7 +2220,7 @@ async fn drive(
                                 control.send(CallUpdate::Camera(true));
                                 tell_media_descriptions(&remote, &media_links, MediaDescription::camera(true), &mut media_description_request, timeline);
                             }
-                            Err(error) => control.send(CallUpdate::Notice(format!("Camera could not start: {error}"))),
+                            Err(error) => control.send(CallUpdate::Notice(notice_with_detail(CAMERA_START_NOTICE, error))),
                         }
                     } else if direct && (same_peer.is_some() || glare_resend.is_some()) {
                         control.send(CallUpdate::Notice(CHANGE_RUNNING_NOTICE.into()));
@@ -2228,17 +2249,17 @@ async fn drive(
                     if local_video.camera_previewing()
                         && let Err(error) = local_video.preview_camera(&camera_choice)
                     {
-                        control.send(CallUpdate::Notice(format!("Camera could not start: {error}")));
+                        control.send(CallUpdate::Notice(notice_with_detail(CAMERA_START_NOTICE, error)));
                     } else if local_video.camera_on()
                         && let Err(error) = local_video.start_camera(&camera_choice)
                     {
-                        control.send(CallUpdate::Notice(format!("Camera could not start: {error}")));
+                        control.send(CallUpdate::Notice(notice_with_detail(CAMERA_START_NOTICE, error)));
                     }
                 }
                 Some(CallCommand::SetVideoQuality(quality)) => {
                     local_video.set_video_quality(quality);
                     if let Err(error) = local_video.refresh_camera_capture(&camera_choice) {
-                        control.send(CallUpdate::Notice(format!("Camera could not restart: {error}")));
+                        control.send(CallUpdate::Notice(notice_with_detail(CAMERA_RESTART_NOTICE, error)));
                     }
                     if video.set_video_quality(quality) {
                         send_receive_change(control, video.reselect(&roster));
@@ -2257,7 +2278,7 @@ async fn drive(
                         && !local_video.has_share_line()
                         && let Err(error) = attach_share_line(&current.peer, &factory, &mut local_video, direct_video_mid.as_deref())
                     {
-                        control.send(CallUpdate::Notice(format!("Sharing could not start: {error}")));
+                        control.send(CallUpdate::Notice(notice_with_detail(SHARING_START_NOTICE, error)));
                     } else if !local_video.sharing() && !video_possible(remote_set, layout, negotiator.path()) {
                         if next.is_none() && negotiator.begin_conference_upgrade() {
                             let pending = escalate(&factory, &grant, options, outgoing_track(software_audio.as_ref(), &track), &remote, &links, &media_leg_id, &media_links, &mut negotiator, live, timeline).await;
@@ -2270,7 +2291,7 @@ async fn drive(
                             control.send(CallUpdate::Notice(NOT_CONNECTED_FOR_VIDEO.into()));
                         }
                     } else if let Err(error) = local_video.open_portal(kind, control.command_sender()) {
-                        control.send(CallUpdate::Notice(format!("Sharing could not start: {error}")));
+                        control.send(CallUpdate::Notice(notice_with_detail(SHARING_START_NOTICE, error)));
                     }
                 }
                 Some(CallCommand::FinishPortalShare { source, generation }) => {
@@ -2292,7 +2313,7 @@ async fn drive(
                     } else if direct && local_video.share_sending() {
                         match local_video.start_share(&source) {
                             Ok(()) => announce_share(control, &source),
-                            Err(error) => control.send(CallUpdate::Notice(format!("Sharing could not start: {error}"))),
+                            Err(error) => control.send(CallUpdate::Notice(notice_with_detail(SHARING_START_NOTICE, error))),
                         }
                     } else if direct && (same_peer.is_some() || glare_resend.is_some()) {
                         control.send(CallUpdate::Notice(CHANGE_RUNNING_NOTICE.into()));
@@ -2300,7 +2321,7 @@ async fn drive(
                         && !local_video.has_share_line()
                         && let Err(error) = attach_share_line(&current.peer, &factory, &mut local_video, direct_video_mid.as_deref())
                     {
-                        control.send(CallUpdate::Notice(format!("Sharing could not start: {error}")));
+                        control.send(CallUpdate::Notice(notice_with_detail(SHARING_START_NOTICE, error)));
                     } else if direct {
                         match local_video.start_share(&source) {
                             Ok(()) => {
@@ -2319,7 +2340,7 @@ async fn drive(
                                     }
                                 }
                             }
-                            Err(error) => control.send(CallUpdate::Notice(format!("Sharing could not start: {error}"))),
+                            Err(error) => control.send(CallUpdate::Notice(notice_with_detail(SHARING_START_NOTICE, error))),
                         }
                     } else if !video_possible(remote_set, layout, negotiator.path()) {
                         if next.is_none() && negotiator.begin_conference_upgrade() {
@@ -2339,7 +2360,7 @@ async fn drive(
                                 tell_media_descriptions(&remote, &media_links, MediaDescription::share(true), &mut media_description_request, timeline);
                                 sync_software_audio(&factory, options, &input, muted, remote_audio.clone(), &current.peer, &track, software_wanted(mic_settings, share_sound_wanted, &local_video, live.audio.as_ref()), false, &mut software_audio, control, timeline);
                             }
-                            Err(error) => control.send(CallUpdate::Notice(format!("Sharing could not start: {error}"))),
+                            Err(error) => control.send(CallUpdate::Notice(notice_with_detail(SHARING_START_NOTICE, error))),
                         }
                     }
                 }
@@ -2384,7 +2405,7 @@ async fn drive(
                     Err(error) => {
                         timeline.record("raise hand failed", error.to_string());
                         control.send(CallUpdate::OwnHand(None));
-                        control.send(CallUpdate::Notice("Could not raise your hand".into()));
+                        control.send(CallUpdate::Notice(RAISE_HAND_FAILED_NOTICE.into()));
                     }
                 },
                 Some(CallCommand::SetHand(false)) => {
@@ -2395,7 +2416,7 @@ async fn drive(
                         && let Err(error) = remote.signaling.lower_hands(&remote.conversation, &remote.participant, &state_ids).await
                     {
                         timeline.record("lower hand failed", error.to_string());
-                        control.send(CallUpdate::Notice("Could not lower your hand".into()));
+                        control.send(CallUpdate::Notice(LOWER_HAND_FAILED_NOTICE.into()));
                     }
                 }
                 Some(CallCommand::LowerHand { mri }) => {
@@ -2404,18 +2425,18 @@ async fn drive(
                         && let Err(error) = remote.signaling.lower_hands(&remote.conversation, &remote.participant, &state_ids).await
                     {
                         timeline.record("lower hand failed", error.to_string());
-                        control.send(CallUpdate::Notice("Could not lower that hand".into()));
+                        control.send(CallUpdate::Notice(LOWER_THAT_HAND_FAILED_NOTICE.into()));
                     }
                 }
                 Some(CallCommand::LowerAllHands) => {
                     if let Err(error) = remote.signaling.lower_all_hands(&remote.conversation, &remote.participant).await {
                         timeline.record("lower all hands failed", error.to_string());
-                        control.send(CallUpdate::Notice("Could not lower all hands".into()));
+                        control.send(CallUpdate::Notice(LOWER_ALL_HANDS_FAILED_NOTICE.into()));
                     }
                 }
                 Some(CallCommand::Admit { mri }) => {
                     let result = remote.signaling.admit(&remote.conversation, &remote.participant, target_of(&roster, &mri), &links).await;
-                    report_organizer_result(result, "admit", "Could not admit that person", control, timeline);
+                    report_organizer_result(result, "admit", ADMIT_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::AdmitAll) => {
                     let mut result = Ok(202);
@@ -2425,19 +2446,19 @@ async fn drive(
                             break;
                         }
                     }
-                    report_organizer_result(result, "admit all", "Could not admit everyone", control, timeline);
+                    report_organizer_result(result, "admit all", ADMIT_ALL_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::Deny { mri }) => {
                     let result = remote.signaling.remove_participant(&remote.conversation, &remote.participant, target_of(&roster, &mri), &links).await;
-                    report_organizer_result(result, "deny", "Could not deny that person", control, timeline);
+                    report_organizer_result(result, "deny", DENY_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::RemoveParticipant { mri }) => {
                     let result = remote.signaling.remove_participant(&remote.conversation, &remote.participant, target_of(&roster, &mri), &links).await;
-                    report_organizer_result(result, "remove participant", "Could not remove that person", control, timeline);
+                    report_organizer_result(result, "remove participant", REMOVE_PARTICIPANT_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::MuteParticipant { mri }) => {
                     let result = remote.signaling.mute_participant(&remote.conversation, &remote.participant, &mri).await;
-                    report_organizer_result(result, "mute participant", "Could not mute that person", control, timeline);
+                    report_organizer_result(result, "mute participant", MUTE_PARTICIPANT_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::MuteAll) => {
                     let others: Vec<String> = roster
@@ -2447,7 +2468,7 @@ async fn drive(
                         .map(|member| member.mri.clone())
                         .collect();
                     let result = remote.signaling.mute_everyone(&remote.conversation, &remote.participant, &others).await;
-                    report_organizer_result(result, "mute all", "Could not mute everyone", control, timeline);
+                    report_organizer_result(result, "mute all", MUTE_ALL_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::SetLock(locked)) => {
                     let result = remote.signaling.set_lock(&remote.conversation, &remote.participant, locked).await;
@@ -2455,11 +2476,11 @@ async fn drive(
                         capability.locked = locked;
                         control.send(CallUpdate::Capability(capability));
                     }
-                    report_organizer_result(result, "lock meeting", "Could not change the meeting lock", control, timeline);
+                    report_organizer_result(result, "lock meeting", MEETING_LOCK_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::SetRole { mri, role }) => {
                     let result = remote.signaling.change_role(&remote.conversation, &remote.participant, &mri, role).await;
-                    report_organizer_result(result, "change role", "Could not change that role", control, timeline);
+                    report_organizer_result(result, "change role", CHANGE_ROLE_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::SetAttendeeModality { mri, modality, allowed }) => {
                     let limits = roster.entries().into_iter().find(|entry| entry.mri == mri).map(|entry| entry.limits).unwrap_or_default();
@@ -2473,7 +2494,11 @@ async fn drive(
                             break;
                         }
                     }
-                    let notice = if modality == Modality::Mic { "Could not change that microphone setting" } else { "Could not change that camera setting" };
+                    let notice = if modality == Modality::Mic {
+                        MIC_SETTING_FAILED_NOTICE
+                    } else {
+                        CAMERA_SETTING_FAILED_NOTICE
+                    };
                     report_organizer_result(result, "attendee modality", notice, control, timeline);
                 }
                 Some(CallCommand::SetAttendeeRestrictions { mic_off, camera_off }) => {
@@ -2486,12 +2511,12 @@ async fn drive(
                         capability.attendee_camera_off = camera_off;
                         control.send(CallUpdate::Capability(capability));
                     }
-                    report_organizer_result(result, "attendee restrictions", "Could not change the attendee settings", control, timeline);
+                    report_organizer_result(result, "attendee restrictions", ATTENDEE_SETTINGS_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::Invite { callees, group_thread }) => {
                     let thread = group_thread.or_else(|| meeting_chat.clone());
                     let result = remote.signaling.add_participants(&remote.conversation, &remote.participant, &callees, thread.as_deref(), meeting_target.as_ref(), &links).await;
-                    report_organizer_result(result, "invite", "Could not invite that person", control, timeline);
+                    report_organizer_result(result, "invite", INVITE_PERSON_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::LoadMeetingOptions) => {
                     let update = match &meeting_target {
@@ -2515,13 +2540,13 @@ async fn drive(
                 }
                 Some(CallCommand::Spotlight { mri }) => {
                     let result = remote.signaling.spotlight(&remote.conversation, &remote.participant, &mri).await;
-                    report_organizer_result(result, "spotlight", "Could not spotlight that person", control, timeline);
+                    report_organizer_result(result, "spotlight", SPOTLIGHT_FAILED_NOTICE, control, timeline);
                 }
                 Some(CallCommand::StopSpotlight { mri }) => {
                     let state_ids: Vec<String> = roster.spotlight_of(&mri).map(|spotlight| spotlight.state_id.clone()).into_iter().collect();
                     if !state_ids.is_empty() {
                         let result = remote.signaling.lower_hands(&remote.conversation, &remote.participant, &state_ids).await.map(|()| 200);
-                        report_organizer_result(result, "stop spotlight", "Could not stop the spotlight", control, timeline);
+                        report_organizer_result(result, "stop spotlight", STOP_SPOTLIGHT_FAILED_NOTICE, control, timeline);
                     }
                 }
                 Some(CallCommand::SetCaptions(on)) => {
@@ -2560,7 +2585,7 @@ async fn drive(
                         && let Err(error) = remote.signaling.caption_language_command(&url, &remote.participant, &language).await
                     {
                         timeline.record("caption language failed", error.to_string());
-                        control.send(CallUpdate::Notice("Could not change the spoken language".into()));
+                        control.send(CallUpdate::Notice(CAPTION_LANGUAGE_FAILED_NOTICE.into()));
                     }
                 }
                 Some(CallCommand::ConsentToRecording) => {
@@ -2571,7 +2596,7 @@ async fn drive(
                         }
                         Err(error) => {
                             timeline.record("recording consent failed", error.to_string());
-                            control.send(CallUpdate::Notice("Could not confirm the recording notice".into()));
+                            control.send(CallUpdate::Notice(CONFIRM_RECORDING_FAILED_NOTICE.into()));
                         }
                     }
                 }
@@ -2593,29 +2618,36 @@ async fn drive(
                         }
                         Err(error) => {
                             timeline.record("hold failed", error.to_string());
-                            control.send(CallUpdate::Notice(if hold { "Could not put the call on hold".into() } else { "Could not resume the call".into() }));
+                            control.send(CallUpdate::Notice(if hold {
+                                HOLD_FAILED_NOTICE.into()
+                            } else {
+                                RESUME_FAILED_NOTICE.into()
+                            }));
                         }
                     }
                 }
                 Some(CallCommand::Transfer { target, replaces }) => {
                     let Some(url) = media_links.get("transfer").cloned() else {
                         control.send(CallUpdate::TransferResult { succeeded: false });
-                        control.send(CallUpdate::Notice("This call cannot be transferred".into()));
+                        control.send(CallUpdate::Notice(TRANSFER_NOT_ALLOWED_NOTICE.into()));
                         continue;
                     };
                     let transfer_target = TransferTarget { mri: &target.mri, replaces: replaces.as_ref() };
                     match remote.signaling.transfer(&url, &remote.participant, transfer_target, &links).await {
-                        Ok(()) => control.send(CallUpdate::Notice(format!("Transferring to {}...", target.display_name))),
+                        Ok(()) => control.send(CallUpdate::Notice(notice_with_detail(
+                            TRANSFERRING_NOTICE,
+                            target.display_name,
+                        ))),
                         Err(error) => {
                             timeline.record("transfer failed", error.to_string());
                             control.send(CallUpdate::TransferResult { succeeded: false });
-                            control.send(CallUpdate::Notice("Could not transfer the call".into()));
+                            control.send(CallUpdate::Notice(TRANSFER_CALL_FAILED_NOTICE.into()));
                         }
                     }
                 }
                 Some(CallCommand::OpenWhiteboard { title }) => {
                     let Some(target) = meeting_target.clone() else {
-                        control.send(CallUpdate::Notice("Whiteboards belong to meetings".into()));
+                        control.send(CallUpdate::Notice(WHITEBOARDS_MEETINGS_ONLY_NOTICE.into()));
                         continue;
                     };
                     let session = inner.session.clone();
@@ -2623,7 +2655,7 @@ async fn drive(
                     tokio::spawn(async move {
                         let update = match whiteboard::fetch_board(&session, &target, &title).await {
                             Ok(url) => CallUpdate::WhiteboardUrl(url),
-                            Err(_) => CallUpdate::Notice("The whiteboard could not be opened".into()),
+                            Err(_) => CallUpdate::Notice(WHITEBOARD_OPEN_FAILED_NOTICE.into()),
                         };
                         let _ = updates.send(update);
                     });
@@ -2650,7 +2682,7 @@ async fn drive(
                 Some(CallCommand::SendReaction(reaction)) => {
                     if let Err(error) = remote.signaling.send_reaction(&remote.conversation, &remote.participant, reaction).await {
                         timeline.record("reaction failed", error.to_string());
-                        control.send(CallUpdate::Notice("Could not send the reaction".into()));
+                        control.send(CallUpdate::Notice(REACTION_FAILED_NOTICE.into()));
                     }
                 }
                 Some(CallCommand::EndMeeting) => {
@@ -2701,7 +2733,7 @@ async fn drive(
                     recording_flow.failed();
                     timeline.record("recording", "did not start in time");
                     control.send(CallUpdate::RecordingPending(false));
-                    control.send(CallUpdate::Notice("The recording did not start".into()));
+                    control.send(CallUpdate::Notice(RECORDING_NOT_STARTED_NOTICE.into()));
                 }
                 if layout == Layout::Conference
                     && let Some(size) = local_video.camera_size()
@@ -3110,13 +3142,6 @@ fn negotiate_video(
     video.negotiated(table, requester);
     send_receive_change(control, video.reselect(roster));
 }
-
-const NOT_CONNECTED_FOR_VIDEO: &str = "Video starts once the call is connected";
-const ON_HOLD_NOTICE: &str = "Resume the call first";
-const CHANGE_RUNNING_NOTICE: &str = "Another change is still running, try again in a moment";
-const VIDEO_FAILED_NOTICE: &str = "Video could not start, the call stays audio only";
-const SHARE_QUEUED_NOTICE: &str = "Sharing starts in a moment";
-const SHARE_REFUSED_NOTICE: &str = "The other side did not accept the screen share";
 
 async fn camera_devices(mode: VideoMode) -> Vec<CameraDevice> {
     match mode {
@@ -3604,10 +3629,10 @@ fn undo_change(change: Change, local_video: &mut LocalVideo, control: &CallContr
         Change::Share(true) => {
             local_video.stop_share();
             clear_share(control);
-            control.send(CallUpdate::Notice("Sharing could not start".into()));
+            control.send(CallUpdate::Notice(notice_with_detail(SHARING_START_NOTICE, "")));
         }
         Change::Share(false) => {}
-        Change::Hold(_) => control.send(CallUpdate::Notice("The hold did not go through".into())),
+        Change::Hold(_) => control.send(CallUpdate::Notice(HOLD_CHANGE_FAILED_NOTICE.into())),
     }
 }
 
@@ -3647,9 +3672,7 @@ async fn apply_background(
                 Ok(Ok(picture)) => local_video.set_background(true, Some(Arc::new(picture))),
                 Ok(Err(error)) => {
                     timeline.record("background image failed", error.to_string());
-                    control.send(CallUpdate::Notice(
-                        "That background image could not be used".into(),
-                    ));
+                    control.send(CallUpdate::Notice(BACKGROUND_IMAGE_FAILED_NOTICE.into()));
                 }
                 Err(_) => {}
             }
@@ -3692,13 +3715,13 @@ fn recorder_busy(error: &Error) -> bool {
 fn report_organizer_result(
     result: Result<u16>,
     label: &str,
-    notice: &str,
+    notice: &'static str,
     control: &CallControl,
     timeline: &Timeline,
 ) {
     if let Err(error) = &result {
         timeline.record(format!("{label} failed"), error.to_string());
-        control.send(CallUpdate::Notice(notice.into()));
+        control.send(CallUpdate::Notice(notice.to_owned()));
     }
     control.send(CallUpdate::Organizer {
         action: label.to_owned(),
@@ -3751,12 +3774,12 @@ async fn run_bot_steps(
     };
     let (join_failure, start_failure) = match job {
         BotJob::Captions => (
-            "The captions service could not join",
-            "Captions could not start",
+            CAPTIONS_JOIN_FAILED_NOTICE,
+            CAPTIONS_START_FAILED_NOTICE,
         ),
         BotJob::Recording => (
-            "The recording service could not join",
-            "The recording could not start",
+            RECORDING_JOIN_FAILED_NOTICE,
+            RECORDING_START_FAILED_NOTICE,
         ),
     };
     loop {
@@ -3888,7 +3911,7 @@ async fn run_bot_steps(
                             }
                             if stopped.is_err() {
                                 let _ = updates.send(CallUpdate::Notice(
-                                    "The recording could not be stopped".into(),
+                                    RECORDING_STOP_FAILED_NOTICE.into(),
                                 ));
                             }
                             let _ = updates.send(CallUpdate::Organizer {

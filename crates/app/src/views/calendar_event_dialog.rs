@@ -9,6 +9,7 @@ use gpui_kit::component::{WindowExt as _, h_flex, v_flex};
 use gpui_kit::*;
 
 use super::rsvp_menu::rsvp_menu;
+use crate::i18n::tr;
 use crate::app_state::AppState;
 use crate::call::week_grid::is_effective_all_day;
 use crate::theme;
@@ -121,7 +122,7 @@ pub fn open_calendar_event(
             .child(
                 Button::new("calendar-event-delete")
                     .danger()
-                    .label("Delete")
+                    .label(tr("common.delete"))
                     .on_click(move |_, window, cx| {
                         delete_state
                             .update(cx, |state, cx| state.delete_calendar_event(&delete_key, cx));
@@ -130,7 +131,7 @@ pub fn open_calendar_event(
             )
             .child(
                 Button::new("calendar-event-close")
-                    .label("Close")
+                    .label(tr("common.close"))
                     .on_click(|_, window, cx| window.close_dialog(cx)),
             );
         if can_rsvp {
@@ -147,7 +148,7 @@ pub fn open_calendar_event(
         if thread_id.is_some() {
             let chat_state = state.clone();
             let chat_thread = thread_id.clone();
-            footer = footer.child(Button::new("calendar-event-chat").label("Chat").on_click(
+            footer = footer.child(Button::new("calendar-event-chat").label(tr("common.chat")).on_click(
                 move |_, window, cx| {
                     chat_state.update(cx, |state, cx| {
                         state.open_meeting_chat(chat_thread.as_deref(), cx)
@@ -163,7 +164,7 @@ pub fn open_calendar_event(
             footer = footer.child(
                 Button::new("calendar-event-join")
                     .primary()
-                    .label("Join")
+                    .label(tr("common.join"))
                     .on_click(move |_, window, cx| {
                         join_state.update(cx, |state, cx| {
                             state.join_calendar_meeting(url.as_deref(), &title, cx)

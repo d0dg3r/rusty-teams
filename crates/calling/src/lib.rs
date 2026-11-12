@@ -35,6 +35,7 @@ pub mod matte;
 #[cfg(windows)]
 mod mic_windows;
 pub mod motion;
+pub mod notices;
 #[cfg(windows)]
 pub use loopback_windows::start_process_capture;
 #[cfg(windows)]

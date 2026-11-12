@@ -4,6 +4,8 @@
 )]
 
 mod active_appearance;
+mod active_locale;
+mod i18n;
 pub mod agents;
 pub mod call;
 mod inline_video;
@@ -123,6 +125,7 @@ fn data_path(name: &str) -> PathBuf {
 fn transport(
     endpoint: Option<&str>,
     database: Option<&std::path::Path>,
+    #[cfg(windows)] sign_in_title: String,
 ) -> Arc<dyn session::Transport> {
     #[cfg(windows)]
     if endpoint.is_none() {
@@ -133,7 +136,7 @@ fn transport(
         inline_video::configure(user_data_folder.clone());
         let transport = webview::start(webview::HostConfig {
             user_data_folder,
-            window_title: format!("{APP_NAME} - Sign in"),
+            window_title: sign_in_title,
             log: |line| app_base::diagnostics::record(line),
         });
         task_dialog::install_host(transport.clone());
@@ -218,8 +221,24 @@ fn main() {
         open_store(&path)
     };
     let store = Arc::new(store);
+    app_base::ui_locale::apply_locale(app_base::ui_locale::effective_locale(app_base::ui_locale::load(
+        &store,
+    )));
+    #[cfg(windows)]
+    let sign_in_title = format!(
+        "{} - {}",
+        app_base::APP_NAME,
+        app_base::ui_locale::tr("auth.sign_in")
+    );
     let user_input = user_activity::UserInput::new();
     let receiver = (!arguments.demo).then(|| {
+        #[cfg(windows)]
+        let transport = transport(
+            arguments.endpoint.as_deref(),
+            arguments.database.as_deref(),
+            sign_in_title.clone(),
+        );
+        #[cfg(not(windows))]
         let transport = transport(arguments.endpoint.as_deref(), arguments.database.as_deref());
         let activity = user_activity::track(user_input.clone());
         backend::start(store.clone(), transport, !arguments.read_only, activity)
@@ -243,6 +262,7 @@ fn main() {
             .detach();
             theme::load_fonts(cx);
             active_appearance::install(&store, cx);
+            active_locale::install(&store, cx);
             theme::apply(cx);
             bind_keys(cx);
             let state = cx.new(|_| {

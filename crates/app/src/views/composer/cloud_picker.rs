@@ -7,6 +7,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 use teams_core::{CloudFile, DriveEntry, DriveFolder, QuickSite};
 
+use crate::i18n::tr;
 use crate::app_state::AppState;
 use crate::runtime;
 use crate::theme::{self, ElevatedSurface as _};
@@ -638,11 +639,11 @@ impl Render for CloudPicker {
                             .child(
                                 Button::new("cloud-picker-attach")
                                     .primary()
-                                    .label("Attach")
+                                    .label(tr("common.attach"))
                                     .disabled(!can_attach)
                                     .on_click(cx.listener(|this, _, _, cx| this.attach(cx))),
                             )
-                            .child(Button::new("cloud-picker-cancel").label("Cancel").on_click(
+                            .child(Button::new("cloud-picker-cancel").label(tr("common.cancel")).on_click(
                                 cx.listener(|_, _, _, cx| cx.emit(CloudPickerEvent::Close)),
                             )),
                     ),

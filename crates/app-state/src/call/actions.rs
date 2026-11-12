@@ -6,6 +6,7 @@ use calling::{
     DeviceChoice, EndReason, EngineEvent, MicSettings, MuteCommand, Reaction, RingSignal,
     ShareKind, ShareSource, VideoKey,
 };
+use app_base::ui_locale::localize_notice;
 use gpui_kit::*;
 
 use super::background::{
@@ -532,7 +533,7 @@ impl AppState {
                 return;
             }
             CallUpdate::Notice(text) => {
-                self.raise_notice(text, None, cx);
+                self.raise_notice(localize_notice(&text), None, cx);
                 return;
             }
             CallUpdate::WhiteboardUrl(url) => {

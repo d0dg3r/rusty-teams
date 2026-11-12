@@ -34,6 +34,7 @@ use super::call_stage::{popped_placeholder, render_stage, StageMode, WAITING_TEX
 use super::call_view_menu::view_button;
 use super::widgets::{corner_badge, count_badge, icon, Corner};
 use crate::app_state::AppState;
+use crate::i18n::{tr, tr_args};
 use crate::call::measured_stage;
 use crate::call::model::ShareMenuEntry;
 use crate::call::TileSize;
@@ -58,18 +59,12 @@ const TILE_RADIUS: f32 = 12.;
 const NAME_PLATE_BACKGROUND: f32 = 0.6;
 const COMPACT_PLATE_BELOW: f32 = 200.;
 pub const CHAT_PANEL_TAG: &str = "shell/islands/main/call-chat-panel";
-pub const NO_MICROPHONE_HINT: &str = "No microphone found";
-const AUDIO_OFF_HINT: &str = "Audio is off for this meeting";
-pub const NO_CAMERA_HINT: &str = "No camera found";
-pub const NO_SHARE_HINT: &str = "Sharing starts once the call is connected";
-pub const NO_WINDOWS_HINT: &str = "No windows found";
 pub(super) const BANNER_HEIGHT: f32 = 40.;
 pub const SHARE_THUMBNAIL_TAG: &str = "call/share-menu/thumbnail";
 const SCREEN_THUMBNAIL: (f32, f32) = (128., 72.);
 const WINDOW_THUMBNAIL: (f32, f32) = (96., 54.);
 const THUMBNAIL_RADIUS: f32 = 6.;
 const THUMBNAIL_ICON: f32 = 22.;
-pub const LOBBY_TEXT: &str = "Waiting in the lobby...";
 pub(super) const CHAT_PANEL_WIDTH: f32 = 320.;
 pub(super) const OVERLAY_BELOW: f32 = 720.;
 const CONTROLS_HEIGHT: f32 = 2. * 16. + CONTROL_SIZE;
@@ -77,13 +72,6 @@ const CHAT_HEADER_HEIGHT: f32 = 48.;
 const REACTION_RISE: f32 = 24.;
 const REACTION_FADE_FROM: f32 = 0.75;
 const REACTION_CELL: f32 = 40.;
-const SHARE_SOUND_LABEL: &str = "Include computer sound";
-const SHARE_MOTION_LABEL: &str = "Optimize for motion";
-const SHARE_STANDOUT_LABEL: &str = "Show me over my content";
-const SHARE_STANDOUT_NEEDS_CAMERA: &str = "Turn your camera on first";
-const NOISE_SUPPRESSION_LABEL: &str = "Noise suppression";
-const MUSIC_MODE_LABEL: &str = "Music mode";
-const PUSH_TO_TALK_HINT: &str = "Unmuted - release Ctrl+Space to mute";
 const PUSH_TO_TALK_TOP: f32 = 12.;
 
 pub fn reaction_glyph(reaction: &Reaction) -> String {
@@ -124,9 +112,11 @@ fn hand_badge(position: usize, own: bool) -> Div {
         .text_size(px(12.))
         .font_weight(FontWeight::SEMIBOLD)
         .child(if own {
-            "Hand raised".to_owned()
+            tr("calls.chrome.hand_raised")
         } else {
-            format!("Hand {position}")
+            let mut args = std::collections::HashMap::new();
+            args.insert("position".to_owned(), position.to_string());
+            tr_args("calls.chrome.hand_position", &args)
         })
 }
 
@@ -181,11 +171,11 @@ fn tile_overlays(extras: &TileExtras) -> Vec<AnyElement> {
 
 pub fn status_line(model: &CallModel, now: Instant) -> (String, Hsla) {
     if model.lobby {
-        (LOBBY_TEXT.to_owned(), theme::amber())
+        (tr("calls.chrome.lobby_waiting"), theme::amber())
     } else if model.is_connecting() {
         (model.connecting_text().to_owned(), theme::text_muted())
     } else if model.is_reconnecting() {
-        ("Reconnecting...".to_owned(), theme::amber())
+        (tr("calls.chrome.reconnecting"), theme::amber())
     } else if model.view.hide_timer {
         (String::new(), theme::text_muted())
     } else {
@@ -408,14 +398,14 @@ pub fn mute_button(
     let button = round_control(id, glyph, background, foreground).size(px(size));
     if !model.can_unmute() {
         let hint = if model.audio_off {
-            AUDIO_OFF_HINT
+            tr("calls.chrome.audio_off_meeting")
         } else {
-            NO_MICROPHONE_HINT
+            tr("calls.chrome.no_microphone")
         };
         return button
             .opacity(DISABLED_OPACITY)
             .cursor_default()
-            .tooltip(move |window, cx| Tooltip::new(hint).build(window, cx));
+            .tooltip(move |window, cx| Tooltip::new(hint.clone()).build(window, cx));
     }
     let app = app.clone();
     button.on_click(move |_, _, cx| {
@@ -431,9 +421,9 @@ pub fn leave_button(
     compact: bool,
 ) -> Stateful<Div> {
     let label = if model.is_connecting() {
-        "Cancel"
+        tr("common.cancel")
     } else {
-        "Leave"
+        tr("common.leave")
     };
     let app = app.clone();
     h_flex()
@@ -485,7 +475,9 @@ pub(super) fn camera_button(app: &Entity<AppState>, model: &CallModel) -> Statef
         return button
             .opacity(DISABLED_OPACITY)
             .cursor_default()
-            .tooltip(|window, cx| Tooltip::new(NO_CAMERA_HINT).build(window, cx));
+            .tooltip(|window, cx| {
+                Tooltip::new(tr("calls.chrome.no_camera")).build(window, cx)
+            });
     }
     let app = app.clone();
     button.on_click(move |_, _, cx| {
@@ -503,7 +495,7 @@ fn sound_switch_item(app: &Entity<AppState>, sound: bool) -> PopupMenuItem {
             .gap(px(16.))
             .items_center()
             .justify_between()
-            .child(SHARE_SOUND_LABEL)
+            .child(tr("calls.chrome.include_computer_sound"))
             .child(Switch::new("call-share-sound").checked(sound))
     })
     .on_click(move |_, _, cx| app.update(cx, |state, cx| state.set_call_share_sound(!sound, cx)))
@@ -518,7 +510,7 @@ fn motion_switch_item(app: &Entity<AppState>, motion: bool) -> PopupMenuItem {
             .gap(px(16.))
             .items_center()
             .justify_between()
-            .child(SHARE_MOTION_LABEL)
+            .child(tr("calls.chrome.optimize_motion"))
             .child(Switch::new("call-share-motion").checked(motion))
     })
     .on_click(move |_, _, cx| app.update(cx, |state, cx| state.set_call_share_motion(!motion, cx)))
@@ -537,7 +529,7 @@ fn standout_switch_item(app: &Entity<AppState>, standout: bool, camera_on: bool)
                     .gap(px(16.))
                     .items_center()
                     .justify_between()
-                    .child(SHARE_STANDOUT_LABEL)
+                    .child(tr("calls.chrome.show_me_over_content"))
                     .child(Switch::new("call-share-standout").checked(standout && camera_on)),
             )
             .when(!camera_on, |row| {
@@ -545,7 +537,7 @@ fn standout_switch_item(app: &Entity<AppState>, standout: bool, camera_on: bool)
                     div()
                         .text_size(px(11.))
                         .text_color(theme::text_muted())
-                        .child(SHARE_STANDOUT_NEEDS_CAMERA),
+                        .child(tr("calls.chrome.camera_on_first")),
                 )
             })
     })
@@ -564,7 +556,7 @@ fn music_mode_item(app: &Entity<AppState>, mic: MicSettings) -> PopupMenuItem {
             .gap(px(16.))
             .items_center()
             .justify_between()
-            .child(MUSIC_MODE_LABEL)
+            .child(tr("calls.chrome.music_mode"))
             .child(Switch::new("call-music-mode").checked(mic.music_mode))
     })
     .on_click(move |_, _, cx| {
@@ -597,7 +589,7 @@ fn push_to_talk_chip(call: &ActiveCall) -> Option<AnyElement> {
                     .bg(hsla(0., 0., 0., NAME_PLATE_BACKGROUND))
                     .text_color(theme::white())
                     .text_size(px(13.))
-                    .child(PUSH_TO_TALK_HINT),
+                    .child(tr("calls.chrome.push_to_talk")),
             )
             .into_any_element()
     })
@@ -643,8 +635,8 @@ fn share_items(
                     separated = true;
                 }
                 let label = match kind {
-                    ShareKind::Screen => "Share entire screen",
-                    ShareKind::Window => "Share a window",
+                    ShareKind::Screen => tr("calls.chrome.share_entire_screen"),
+                    ShareKind::Window => tr("calls.chrome.share_window"),
                 };
                 let app = app.clone();
                 popup.item(PopupMenuItem::new(label).on_click(move |_, _, cx| {
@@ -659,9 +651,13 @@ fn share_items(
                 let (label, thumbnail, icon, size) = if source.kind == ShareKind::Screen {
                     screen_index += 1;
                     let label = if single_screen {
-                        "Share entire screen".to_owned()
+                        tr("calls.chrome.share_entire_screen")
                     } else {
-                        format!("Share screen {screen_index}")
+                        {
+                            let mut args = std::collections::HashMap::new();
+                            args.insert("n".to_owned(), screen_index.to_string());
+                            tr_args("calls.chrome.share_screen_n", &args)
+                        }
                     };
                     (
                         label,
@@ -686,9 +682,9 @@ fn share_items(
             }
             ShareMenuEntry::WindowHeader => popup
                 .separator()
-                .item(PopupMenuItem::label("Share a window...")),
+                .item(PopupMenuItem::label(tr("calls.chrome.share_window_ellipsis"))),
             ShareMenuEntry::NoWindows => {
-                popup.item(PopupMenuItem::new(NO_WINDOWS_HINT).disabled(true))
+                popup.item(PopupMenuItem::new(tr("calls.chrome.no_windows")).disabled(true))
             }
         };
     }
@@ -749,7 +745,7 @@ fn share_button(
             theme::accent(),
             theme::on_accent(),
         )
-        .tooltip(|window, cx| Tooltip::new("Stop sharing").build(window, cx))
+        .tooltip(|window, cx| Tooltip::new(tr("calls.chrome.stop_sharing")).build(window, cx))
         .on_click(move |_, _, cx| {
             cx.stop_propagation();
             app.update(cx, |state, cx| state.stop_call_share(cx));
@@ -766,7 +762,9 @@ fn share_button(
         return face
             .opacity(DISABLED_OPACITY)
             .cursor_default()
-            .tooltip(|window, cx| Tooltip::new(NO_SHARE_HINT).build(window, cx))
+            .tooltip(|window, cx| {
+                Tooltip::new(tr("calls.chrome.sharing_when_connected")).build(window, cx)
+            })
             .into_any_element();
     }
     let app = app.clone();
@@ -807,7 +805,11 @@ fn sharing_banner(app: &Entity<AppState>, model: &CallModel, sound: bool) -> Opt
             .text_size(px(13.))
             .font_weight(FontWeight::SEMIBOLD)
             .child(icon(IconName::ScreenShare, 16., theme::on_accent()))
-            .child(format!("You are sharing: {label}"))
+            .child({
+                let mut args = std::collections::HashMap::new();
+                args.insert("label".to_owned(), label.clone());
+                tr_args("calls.chrome.sharing_label", &args)
+            })
             .child(
                 div()
                     .id("call-sharing-sound")
@@ -820,9 +822,9 @@ fn sharing_banner(app: &Entity<AppState>, model: &CallModel, sound: bool) -> Opt
                     .cursor_pointer()
                     .hover(|button| button.opacity(0.9))
                     .child(if sound {
-                        "Computer sound on"
+                        tr("calls.chrome.computer_sound_on")
                     } else {
-                        "Computer sound off"
+                        tr("calls.chrome.computer_sound_off")
                     })
                     .on_click(move |_, _, cx| {
                         sound_app.update(cx, |state, cx| state.set_call_share_sound(!sound, cx))
@@ -840,7 +842,7 @@ fn sharing_banner(app: &Entity<AppState>, model: &CallModel, sound: bool) -> Opt
                     .text_color(theme::accent())
                     .cursor_pointer()
                     .hover(|button| button.opacity(0.9))
-                    .child("Stop sharing")
+                    .child(tr("calls.chrome.stop_sharing"))
                     .on_click(move |_, _, cx| {
                         app.update(cx, |state, cx| state.stop_call_share(cx))
                     }),
@@ -860,9 +862,9 @@ fn chat_button(app: &Entity<AppState>, open: bool, unread: u32) -> Stateful<Div>
         .relative()
         .tooltip(move |window, cx| {
             Tooltip::new(if open {
-                "Close the chat"
+                tr("calls.chrome.close_chat")
             } else {
-                "Open the chat"
+                tr("calls.chrome.open_chat")
             })
             .build(window, cx)
         })
@@ -889,8 +891,12 @@ fn hand_button(app: &Entity<AppState>, model: &CallModel) -> Stateful<Div> {
         CONTROL_ICON,
         foreground,
     ));
-    let tooltip = if raised { "Lower hand" } else { "Raise hand" };
-    let button = button.tooltip(move |window, cx| Tooltip::new(tooltip).build(window, cx));
+    let tooltip = if raised {
+        tr("calls.chrome.lower_hand")
+    } else {
+        tr("calls.chrome.raise_hand")
+    };
+    let button = button.tooltip(move |window, cx| Tooltip::new(tooltip.clone()).build(window, cx));
     if !model.can_react() {
         return button.opacity(DISABLED_OPACITY).cursor_default();
     }
@@ -985,7 +991,7 @@ fn leave_menu(app: &Entity<AppState>, model: &CallModel) -> impl IntoElement {
             let popup = popup.min_w(px(MENU_WIDTH));
             let popup = if can_lower_all {
                 popup.item(
-                    PopupMenuItem::new("Lower all hands").on_click(move |_, _, cx| {
+                    PopupMenuItem::new(tr("calls.chrome.lower_all_hands")).on_click(move |_, _, cx| {
                         lower_app.update(cx, |state, cx| state.lower_all_call_hands(cx))
                     }),
                 )
@@ -994,7 +1000,7 @@ fn leave_menu(app: &Entity<AppState>, model: &CallModel) -> impl IntoElement {
             };
             if can_end {
                 popup.item(
-                    PopupMenuItem::new("End meeting for everyone")
+                    PopupMenuItem::new(tr("calls.chrome.end_meeting_for_all"))
                         .icon(IconName::PhoneOff)
                         .on_click(move |_, _, cx| {
                             end_app.update(cx, |state, cx| state.end_meeting_for_all(cx))
@@ -1030,7 +1036,8 @@ fn devices_menu(
     mic: MicSettings,
 ) -> PopupMenu {
     if model.audio_off {
-        return popup.item(PopupMenuItem::new(AUDIO_OFF_HINT).disabled(true));
+        return popup
+            .item(PopupMenuItem::new(tr("calls.chrome.audio_off_meeting")).disabled(true));
     }
     let input_app = app.clone();
     let output_app = app.clone();
@@ -1050,9 +1057,9 @@ fn devices_menu(
     );
     let mut popup = popup
         .min_w(px(MENU_WIDTH))
-        .item(PopupMenuItem::label("Microphone"));
+        .item(PopupMenuItem::label(tr("calls.chrome.microphone")));
     if model.listen_only {
-        popup = popup.item(PopupMenuItem::new(NO_MICROPHONE_HINT).disabled(true));
+        popup = popup.item(PopupMenuItem::new(tr("calls.chrome.no_microphone")).disabled(true));
     } else {
         for item in inputs {
             popup = popup.item(item);
@@ -1060,7 +1067,7 @@ fn devices_menu(
     }
     popup = popup
         .separator()
-        .item(PopupMenuItem::label(NOISE_SUPPRESSION_LABEL));
+        .item(PopupMenuItem::label(tr("calls.chrome.noise_suppression")));
     for level in NoiseSuppression::ALL {
         let level_app = app.clone();
         popup = popup.item(
@@ -1081,7 +1088,7 @@ fn devices_menu(
     popup = popup
         .item(music_mode_item(app, mic))
         .separator()
-        .item(PopupMenuItem::label("Speaker"));
+        .item(PopupMenuItem::label(tr("calls.chrome.speaker")));
     for item in outputs {
         popup = popup.item(item);
     }
@@ -1202,7 +1209,7 @@ pub(super) fn own_tile(
     if own_mri.is_empty() {
         return element;
     }
-    with_tile_menu(app, model, &own_mri, "You", true, element)
+    with_tile_menu(app, model, &own_mri, &tr("common.you"), true, element)
 }
 
 pub(super) fn plain_own_tile(
@@ -1237,11 +1244,12 @@ fn own_tile_body(
         .call
         .as_ref()
         .and_then(|call| call.pictures.live(&VideoKey::LocalCamera, now));
+    let you = tr("common.you");
     if let Some(image) = self_view {
         return video_tile(
             size,
             image,
-            "You",
+            &you,
             model.local_speaking,
             model.muted,
             extras,
@@ -1251,13 +1259,13 @@ fn own_tile_body(
     let avatar = person_avatar(
         &state.directory,
         me.map(|person| person.user_id.as_str()),
-        me.map_or("You", |person| person.display_name.as_str()),
+        me.map_or(you.as_str(), |person| person.display_name.as_str()),
         size.avatar,
     );
     tile(
         size,
         avatar,
-        "You",
+        &you,
         model.local_speaking,
         model.muted,
         None,

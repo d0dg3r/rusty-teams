@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0-joe.5] - 2026-11-12
+
+### Added
+
+- UI language: English and German (Germany), with OS locale on first start
+  (`de*` → German, otherwise English) and a persisted override under Appearance.
+- `rust-i18n` catalog for app chrome, settings, calls notices, tray, and agents;
+  missing keys fall back to English.
+
+### Changed
+
+- Call notices use stable i18n keys (optional detail payload) and are localized
+  at the UI boundary instead of shipping English literals from calling.
+
 ## [0.3.0-joe.4] - 2026-11-12
 
 ### Fixed
