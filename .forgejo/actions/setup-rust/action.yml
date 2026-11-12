@@ -35,11 +35,15 @@ runs:
             source "$HOME/.cargo/env"
           fi
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          # Git-Bash on Windows often needs the User profile path too.
-          if [[ -d "/c/Users/${USER}/.cargo/bin" ]]; then
-            echo "/c/Users/${USER}/.cargo/bin" >> "$GITHUB_PATH"
-          fi
+          # Git-Bash on Windows: cargo may live under the profile path.
+          for cargo_bin in \
+            "${USERPROFILE:-}/.cargo/bin" \
+            "${HOME}/.cargo/bin"; do
+            [[ -n "$cargo_bin" && -d "$cargo_bin" ]] || continue
+            echo "$cargo_bin" >> "$GITHUB_PATH"
+          done
         fi
+        export PATH="${HOME}/.cargo/bin:${USERPROFILE:-}/.cargo/bin:${PATH}"
         if [[ -n "$default_host" ]]; then
           rustup set default-host "$default_host" || true
           rustup toolchain install "stable-${default_host}"
