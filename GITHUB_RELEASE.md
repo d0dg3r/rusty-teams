@@ -58,8 +58,8 @@ Verifiziert auf Forgejo-Release und GitHub-Spiegel:
 | `*-x86_64.rpm` | ok |
 | `*-x86_64.pkg.tar.zst` | ok (Layout `rusty-teams` + Symlink `teams`) |
 | `*-x86_64.flatpak` | best effort — diesmal nicht veröffentlicht |
-| `*-windows-amd64.exe` | ok (Forgejo Publish + GitHub-Mirror) |
-| `*-windows-arm64.exe` | Homelab `win-02` offline (WiFi-WoL greift nicht). Smoke-Fallback: `.github/workflows/smoke-windows-arm.yml` auf `windows-11-arm` (danach löschen). `.cargo/config.toml` braucht `+crt-static` auch für `aarch64-pc-windows-msvc`. |
+| `*-windows-amd64.exe` | ok (Forgejo `ci-runner-windows-01` + Mirror) |
+| `*-windows-arm64.exe` | ok (Homelab `win-02` war offline; einmalig `windows-11-arm` Smoke, Asset nach Forgejo gespiegelt). Dauerhaft: Label `windows-arm64`. `.cargo/config.toml` hat `+crt-static` für `aarch64-pc-windows-msvc`. |
 | `*-macos-universal.zip` | ok |
 
-Reusable Windows-Jobs brauchen `if: … \|\| github.event_name == 'workflow_call'` und `GH_MIRROR_TOKEN` (nicht `GITHUB_MIRROR_TOKEN` als Secret-Name).
+Reusable Windows-Jobs brauchen `workflow_call` im Publish-`if` und Secret-Name `GH_MIRROR_TOKEN` (Forgejo verbietet Prefix `GITHUB_`).
