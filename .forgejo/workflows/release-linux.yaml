@@ -35,16 +35,7 @@ jobs:
             flatpak flatpak-builder \
             elfutils jq
 
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: release-linux-${{ hashFiles('**/Cargo.lock') }}
+      - uses: ./.forgejo/actions/setup-rust
 
       - name: Build
         run: cargo build -p app --release

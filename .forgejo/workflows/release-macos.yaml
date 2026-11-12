@@ -23,7 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: ./.forgejo/actions/setup-rust
+        with:
+          targets: aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Build universal .app zip
         run: scripts/build-macos.sh crates/app teams

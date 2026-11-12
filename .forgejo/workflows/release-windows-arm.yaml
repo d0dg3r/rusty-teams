@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: ./.forgejo/actions/setup-rust
 
       - uses: ./.forgejo/actions/setup-windows
 

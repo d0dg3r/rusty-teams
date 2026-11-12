@@ -1,0 +1,31 @@
+name: Set up Rust
+description: >-
+  Installs a stable Rust toolchain via rustup. Prefer this over
+  dtolnay/rust-toolchain on Forgejo — data.forgejo.org has no mirror of that action.
+inputs:
+  targets:
+    description: Extra rustup targets (space-separated)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Install rustup toolchain
+      shell: bash
+      run: |
+        set -euo pipefail
+        if ! command -v rustup >/dev/null 2>&1; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          # shellcheck disable=SC1091
+          source "$HOME/.cargo/env"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+        fi
+        rustup default stable
+        rustup update stable
+        # Extra targets (e.g. macOS universal x86_64 slice)
+        for target in ${{ inputs.targets }}; do
+          [[ -n "$target" ]] || continue
+          rustup target add "$target"
+        done
+        rustc --version
+        cargo --version
