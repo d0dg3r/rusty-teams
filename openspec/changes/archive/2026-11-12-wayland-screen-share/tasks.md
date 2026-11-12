@@ -24,7 +24,7 @@
 ## 5. Zusammenspiel
 
 - [x] 5.1 `cargo test -p calling --lib portal` und `cargo test -p app-call-model --lib portal_share` und `cargo test -p app-state --lib portal_minimize` gemeinsam grün.
-- [ ] 5.2 Auf Hyprland in einem verbundenen Gespräch: Bildschirm-Dialog nur für Monitore, Fenster-Dialog nur für Fenster, Abbruch ohne Hinweis, bestätigter Bildschirm zeigt das Hauptfenster nicht in der Aufnahme. KDE und GNOME laufen über denselben Pfad; ohne Sitzung dort den Task nicht als Fehlschlag werten.
+- [x] 5.2 Auf Hyprland in einem verbundenen Gespräch: Bildschirm-Dialog nur für Monitore, Fenster-Dialog nur für Fenster, Abbruch ohne Hinweis, bestätigter Bildschirm zeigt das Hauptfenster nicht in der Aufnahme. KDE und GNOME laufen über denselben Pfad; ohne Sitzung dort den Task nicht als Fehlschlag werten.
 
 ## Workflow follow-up
 
