@@ -14,14 +14,40 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        if ! command -v rustup >/dev/null 2>&1; then
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-          # shellcheck disable=SC1091
-          source "$HOME/.cargo/env"
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+        # Windows runners need the MSVC toolchain (gpui / onnx / existing CI).
+        default_host=""
+        case "$(uname -s 2>/dev/null || echo unknown)" in
+          MINGW*|MSYS*|CYGWIN*|Windows_NT)
+            case "$(uname -m 2>/dev/null || echo x86_64)" in
+              aarch64|arm64) default_host=aarch64-pc-windows-msvc ;;
+              *) default_host=x86_64-pc-windows-msvc ;;
+            esac
+            ;;
+        esac
+        rustup_args=(-y --default-toolchain stable)
+        if [[ -n "$default_host" ]]; then
+          rustup_args+=(--default-host "$default_host")
         fi
-        rustup default stable
-        rustup update stable
+        if ! command -v rustup >/dev/null 2>&1; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- "${rustup_args[@]}"
+          # shellcheck disable=SC1091
+          if [[ -f "$HOME/.cargo/env" ]]; then
+            source "$HOME/.cargo/env"
+          fi
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          # Git-Bash on Windows often needs the User profile path too.
+          if [[ -d "/c/Users/${USER}/.cargo/bin" ]]; then
+            echo "/c/Users/${USER}/.cargo/bin" >> "$GITHUB_PATH"
+          fi
+        fi
+        if [[ -n "$default_host" ]]; then
+          rustup set default-host "$default_host" || true
+          rustup toolchain install "stable-${default_host}"
+          rustup default "stable-${default_host}"
+        else
+          rustup default stable
+          rustup update stable
+        fi
         # Extra targets (e.g. macOS universal x86_64 slice)
         for target in ${{ inputs.targets }}; do
           [[ -n "$target" ]] || continue
