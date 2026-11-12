@@ -1370,13 +1370,16 @@ dependencies = [
  "chrono",
  "futures-util",
  "percent-encoding",
- "reqwest 0.12.28",
+ "rand 0.9.5",
+ "reqwest 0.13.5",
  "serde",
  "serde_json",
  "session",
+ "sha2 0.10.9",
  "thiserror 2.0.21",
  "tokio",
  "tokio-tungstenite",
+ "url",
  "uuid",
 ]
 
@@ -4493,7 +4496,6 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tower-service",
- "webpki-roots",
 ]
 
 [[package]]
@@ -7677,7 +7679,6 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "webpki-roots",
 ]
 
 [[package]]
@@ -7706,6 +7707,7 @@ dependencies = [
  "rustls-platform-verifier",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",
@@ -8754,6 +8756,7 @@ dependencies = [
  "directories",
  "rusqlite",
  "scraper",
+ "serde",
  "serde_json",
  "tempfile",
  "thiserror 2.0.21",

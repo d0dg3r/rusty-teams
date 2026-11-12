@@ -8,12 +8,13 @@ use crate::settings_section::SettingsSection;
 use crate::theme;
 use crate::views::widgets::icon;
 
-pub const TEAMS_GROUP: [SettingsSection; 6] = [
+pub const TEAMS_GROUP: [SettingsSection; 7] = [
     SettingsSection::General,
     SettingsSection::Notifications,
     SettingsSection::Appearance,
     SettingsSection::Chats,
     SettingsSection::Calls,
+    SettingsSection::Calendar,
     SettingsSection::Devices,
 ];
 pub const RUSTY_GROUP: [SettingsSection; 2] = [SettingsSection::Agents, SettingsSection::Mcp];
@@ -60,6 +61,13 @@ fn search_terms(section: SettingsSection) -> &'static [&'static str] {
             "Format messages using mark-down",
         ],
         SettingsSection::Calls => &["Ringtones"],
+        SettingsSection::Calendar => &[
+            "Google Calendar",
+            "Connect Google",
+            "Home calendar",
+            "Also write to",
+            "Outlook",
+        ],
         SettingsSection::Devices => &[
             "Speaker",
             "Microphone",
@@ -103,6 +111,7 @@ pub fn label(section: SettingsSection) -> &'static str {
         SettingsSection::Appearance => "Appearance and accessibility",
         SettingsSection::Chats => "Chats and channels",
         SettingsSection::Calls => "Calls",
+        SettingsSection::Calendar => "Calendar",
         SettingsSection::Devices => "Devices",
         SettingsSection::Agents => "Agents",
         SettingsSection::Mcp => "MCP",
@@ -117,6 +126,7 @@ fn icon_name(section: SettingsSection) -> IconName {
         SettingsSection::Appearance => IconName::Palette,
         SettingsSection::Chats => IconName::MessageSquare,
         SettingsSection::Calls => IconName::Phone,
+        SettingsSection::Calendar => IconName::Calendar,
         SettingsSection::Devices => IconName::Headphones,
         SettingsSection::Agents => IconName::Bot,
         SettingsSection::Mcp => IconName::Plug,
@@ -139,6 +149,7 @@ fn element_id(section: SettingsSection) -> &'static str {
         SettingsSection::Appearance => "settings-nav-appearance",
         SettingsSection::Chats => "settings-nav-chats",
         SettingsSection::Calls => "settings-nav-calls",
+        SettingsSection::Calendar => "settings-nav-calendar",
         SettingsSection::Devices => "settings-nav-devices",
         SettingsSection::Agents => "settings-nav-agents",
         SettingsSection::Mcp => "settings-nav-mcp",

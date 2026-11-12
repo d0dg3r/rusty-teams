@@ -160,9 +160,10 @@ impl ConversationView {
             let chat = message_context::chat_title(state, &chat_id);
             let thread = message_context::recent_thread(state, &chat_id);
             let user = message_context::ask_prompt(&chat, &thread, &prompt);
-            let receiver = runtime::spawn(async move {
-                agents::complete_text(&profile, ASK_SYSTEM, &user).await
-            });
+            let receiver =
+                runtime::spawn(
+                    async move { agents::complete_text(&profile, ASK_SYSTEM, &user).await },
+                );
             cx.spawn(async move |this, cx| {
                 let answer = match receiver.await {
                     Ok(Ok(text)) => Ok(text),
@@ -170,7 +171,12 @@ impl ConversationView {
                     Err(error) => Err(error.to_string()),
                 };
                 this.update(cx, |this, cx| {
-                    this.settle_copilot(generation, index, answer.map_err(|error| format!("{failed} {error}")), cx)
+                    this.settle_copilot(
+                        generation,
+                        index,
+                        answer.map_err(|error| format!("{failed} {error}")),
+                        cx,
+                    )
                 })
                 .ok();
             })
@@ -299,9 +305,12 @@ impl ConversationView {
                 .pb(px(PANE_PADDING))
                 .gap(px(12.));
             for (index, turn) in self.copilot.turns.iter().enumerate() {
-                body = body
-                    .child(prompt_bubble(&turn.prompt))
-                    .child(answer_view(index, &turn.answer, &working, cx));
+                body = body.child(prompt_bubble(&turn.prompt)).child(answer_view(
+                    index,
+                    &turn.answer,
+                    &working,
+                    cx,
+                ));
             }
             v_flex()
                 .flex_1()
@@ -401,7 +410,10 @@ fn identity_mark(local: bool, size: f32, color: Hsla) -> AnyElement {
     if local {
         symbol(LOCAL_ICON, size, color).into_any_element()
     } else {
-        img(LOGO_ASSET).size(px(size)).flex_none().into_any_element()
+        img(LOGO_ASSET)
+            .size(px(size))
+            .flex_none()
+            .into_any_element()
     }
 }
 

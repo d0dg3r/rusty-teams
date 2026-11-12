@@ -1,12 +1,13 @@
 use std::time::Instant;
 
+use calling::VideoKey;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::h_flex;
 use gpui_kit::*;
 
 use super::call_mini_window::{
-    ControlIds, WINDOW_RADIUS, chip, controls_row, self_view, speaker_layer, speaker_name_chip,
-    speaker_speaking, tinted_chip,
+    chip, controls_row, self_view, speaker_layer, speaker_name_chip, speaker_speaking, tinted_chip,
+    ControlIds, WINDOW_RADIUS,
 };
 use super::call_view::status_line;
 use super::toolbar_placement::TimelineBounds;
@@ -17,6 +18,8 @@ use app_ui_kit::layout::ROW_PADDING;
 
 const MINI_WIDTH: f32 = 256.;
 const MINI_HEIGHT: f32 = 144.;
+const SHARE_MINI_WIDTH: f32 = 320.;
+const SHARE_MINI_HEIGHT: f32 = 180.;
 const MINI_RIGHT: f32 = 16.;
 const MINI_BOTTOM: f32 = 40.;
 
@@ -91,6 +94,14 @@ impl Render for CallMiniView {
                     )
                 });
         let sharing = model.local_share.is_some();
+        let share_image = sharing
+            .then(|| {
+                state
+                    .call
+                    .as_ref()
+                    .and_then(|call| call.pictures.live(&VideoKey::LocalScreen, now))
+            })
+            .flatten();
         let open_app = self.app.clone();
         let back_app = self.app.clone();
         let speaker_name = speaker_name_chip(state, model, now);
@@ -113,8 +124,16 @@ impl Render for CallMiniView {
             .absolute()
             .right(right)
             .bottom(bottom)
-            .w(px(MINI_WIDTH))
-            .h(px(MINI_HEIGHT))
+            .w(px(if sharing {
+                SHARE_MINI_WIDTH
+            } else {
+                MINI_WIDTH
+            }))
+            .h(px(if sharing {
+                SHARE_MINI_HEIGHT
+            } else {
+                MINI_HEIGHT
+            }))
             .overflow_hidden()
             .rounded(px(WINDOW_RADIUS))
             .bg(theme::surface())
@@ -126,7 +145,18 @@ impl Render for CallMiniView {
             .on_click(move |_, _, cx| {
                 open_app.update(cx, |state, cx| state.show_call(true, cx));
             })
-            .child(speaker_layer(state, model, now))
+            .child(match share_image {
+                Some(image) => div()
+                    .size_full()
+                    .bg(hsla(0., 0., 0.04, 1.))
+                    .child(
+                        img(ImageSource::Render(image))
+                            .size_full()
+                            .object_fit(ObjectFit::Contain),
+                    )
+                    .into_any_element(),
+                None => speaker_layer(state, model, now),
+            })
             .child(div().absolute().top(px(8.)).left(px(8.)).child(top_left))
             .children(
                 speaker_name

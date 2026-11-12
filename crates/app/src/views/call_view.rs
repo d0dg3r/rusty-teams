@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use calling::{DeviceEntry, MicSettings, NoiseSuppression, Reaction, VideoKey};
+use calling::{DeviceEntry, MicSettings, NoiseSuppression, Reaction, ShareKind, VideoKey};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::{
     button::{Button, ButtonVariants as _},
@@ -17,11 +17,11 @@ use gpui_kit::*;
 
 use super::avatar::person_avatar;
 use super::call_control_fold::{
-    CONTROL_GAP, CONTROLS_PADDING, Foldable, FoldedControls, fixed_controls_width, folded_for_width,
+    fixed_controls_width, folded_for_width, Foldable, FoldedControls, CONTROLS_PADDING, CONTROL_GAP,
 };
 use super::call_extras::{
-    CameraMenu, consent_overlay, consult_banner, hold_panel, recording_chip, return_button,
-    room_chip, whiteboard_stage,
+    consent_overlay, consult_banner, hold_panel, recording_chip, return_button, room_chip,
+    whiteboard_stage, CameraMenu,
 };
 use super::call_health::{health_banner, health_indicator};
 use super::call_layouts::stage_region;
@@ -30,13 +30,14 @@ use super::call_organizer::{
     more_button, pin_chip, spotlight_chip, with_tile_menu,
 };
 use super::call_people::{lock_banner, lock_chip, options_dialog, people_button, people_panel};
-use super::call_stage::{StageMode, popped_placeholder, render_stage};
+use super::call_stage::{popped_placeholder, render_stage, StageMode, WAITING_TEXT};
 use super::call_view_menu::view_button;
-use super::widgets::{Corner, corner_badge, count_badge, icon};
+use super::widgets::{corner_badge, count_badge, icon, Corner};
 use crate::app_state::AppState;
-use crate::call::REACTION_SHOWN;
-use crate::call::TileSize;
 use crate::call::measured_stage;
+use crate::call::model::ShareMenuEntry;
+use crate::call::TileSize;
+use crate::call::REACTION_SHOWN;
 use crate::call::{ActiveCall, CallKind, CallModel, Tile, TileState};
 use crate::rows::reaction_glyph as chat_reaction_glyph;
 use crate::theme;
@@ -63,7 +64,6 @@ pub const NO_CAMERA_HINT: &str = "No camera found";
 pub const NO_SHARE_HINT: &str = "Sharing starts once the call is connected";
 pub const NO_WINDOWS_HINT: &str = "No windows found";
 pub(super) const BANNER_HEIGHT: f32 = 40.;
-const MAX_WINDOW_ITEMS: usize = 12;
 pub const SHARE_THUMBNAIL_TAG: &str = "call/share-menu/thumbnail";
 const SCREEN_THUMBNAIL: (f32, f32) = (128., 72.);
 const WINDOW_THUMBNAIL: (f32, f32) = (96., 54.);
@@ -626,50 +626,71 @@ fn share_items(
     model: &CallModel,
     options: ShareOptions,
 ) -> PopupMenu {
-    let screens = model.screens();
-    let single_screen = screens.len() == 1;
-    let mut popup = popup
-        .min_w(px(SHARE_MENU_WIDTH))
-        .item(sound_switch_item(app, options.sound))
-        .item(motion_switch_item(app, options.motion))
-        .item(standout_switch_item(app, options.standout, model.camera_on))
-        .separator();
-    for (index, source) in screens.into_iter().enumerate() {
-        let label = if single_screen {
-            "Share entire screen".to_owned()
-        } else {
-            format!("Share screen {}", index + 1)
+    let single_screen = model.screens().len() == 1;
+    let mut screen_index = 0usize;
+    let mut separated = false;
+    let mut popup = popup.min_w(px(SHARE_MENU_WIDTH));
+    for entry in model.share_menu_entries() {
+        popup = match entry {
+            ShareMenuEntry::Sound => popup.item(sound_switch_item(app, options.sound)),
+            ShareMenuEntry::Motion => popup.item(motion_switch_item(app, options.motion)),
+            ShareMenuEntry::Standout => {
+                popup.item(standout_switch_item(app, options.standout, model.camera_on))
+            }
+            ShareMenuEntry::Portal(kind) => {
+                if !separated {
+                    popup = popup.separator();
+                    separated = true;
+                }
+                let label = match kind {
+                    ShareKind::Screen => "Share entire screen",
+                    ShareKind::Window => "Share a window",
+                };
+                let app = app.clone();
+                popup.item(PopupMenuItem::new(label).on_click(move |_, _, cx| {
+                    app.update(cx, |state, cx| state.start_portal_share(kind, cx))
+                }))
+            }
+            ShareMenuEntry::Source(source) => {
+                if !separated {
+                    popup = popup.separator();
+                    separated = true;
+                }
+                let (label, thumbnail, icon, size) = if source.kind == ShareKind::Screen {
+                    screen_index += 1;
+                    let label = if single_screen {
+                        "Share entire screen".to_owned()
+                    } else {
+                        format!("Share screen {screen_index}")
+                    };
+                    (
+                        label,
+                        model.share_thumbnail(&source),
+                        IconName::Monitor,
+                        SCREEN_THUMBNAIL,
+                    )
+                } else {
+                    (
+                        source.label(),
+                        model.share_thumbnail(&source),
+                        IconName::AppWindow,
+                        WINDOW_THUMBNAIL,
+                    )
+                };
+                let app = app.clone();
+                popup.item(share_source_item(label, thumbnail, icon, size).on_click(
+                    move |_, _, cx| {
+                        app.update(cx, |state, cx| state.start_call_share(source.clone(), cx))
+                    },
+                ))
+            }
+            ShareMenuEntry::WindowHeader => popup
+                .separator()
+                .item(PopupMenuItem::label("Share a window...")),
+            ShareMenuEntry::NoWindows => {
+                popup.item(PopupMenuItem::new(NO_WINDOWS_HINT).disabled(true))
+            }
         };
-        let thumbnail = model.share_thumbnail(source);
-        let source = source.clone();
-        let app = app.clone();
-        popup = popup.item(
-            share_source_item(label, thumbnail, IconName::Monitor, SCREEN_THUMBNAIL).on_click(
-                move |_, _, cx| {
-                    app.update(cx, |state, cx| state.start_call_share(source.clone(), cx))
-                },
-            ),
-        );
-    }
-    popup = popup
-        .separator()
-        .item(PopupMenuItem::label("Share a window..."));
-    let windows = model.windows();
-    if windows.is_empty() {
-        return popup.item(PopupMenuItem::new(NO_WINDOWS_HINT).disabled(true));
-    }
-    for source in windows.into_iter().take(MAX_WINDOW_ITEMS) {
-        let label = source.label();
-        let thumbnail = model.share_thumbnail(source);
-        let source = source.clone();
-        let app = app.clone();
-        popup = popup.item(
-            share_source_item(label, thumbnail, IconName::AppWindow, WINDOW_THUMBNAIL).on_click(
-                move |_, _, cx| {
-                    app.update(cx, |state, cx| state.start_call_share(source.clone(), cx))
-                },
-            ),
-        );
     }
     popup
 }
@@ -1421,9 +1442,14 @@ pub fn render_call_view(
     .children(push_to_talk_chip(call))
     .children(state.transfer_picker.clone())
     .children(options_dialog(app, call))
-    .children(consent_overlay(app, model));
+    .children(consent_overlay(app, model))
+    .children(local_share_float(app, state));
+    let share_in_chat = call
+        .chat_open
+        .then(|| local_share_window(app, state, CHAT_PANEL_WIDTH))
+        .flatten();
     let panels: Vec<AnyElement> = chat
-        .map(|chat| chat_panel(app, chat))
+        .map(|chat| chat_panel(app, share_in_chat, chat))
         .into_iter()
         .chain(
             call.transcript_open
@@ -1457,17 +1483,15 @@ fn side_panels(panels: Vec<AnyElement>, island_width: f32) -> Vec<AnyElement> {
     if island_width - panels_width >= OVERLAY_BELOW {
         return panels;
     }
-    vec![
-        h_flex()
-            .absolute()
-            .top_0()
-            .right_0()
-            .bottom(px(CONTROLS_HEIGHT))
-            .gap(px(ISLAND_GAP))
-            .w(px(panels_width.min(island_width)))
-            .children(panels)
-            .into_any_element(),
-    ]
+    vec![h_flex()
+        .absolute()
+        .top_0()
+        .right_0()
+        .bottom(px(CONTROLS_HEIGHT))
+        .gap(px(ISLAND_GAP))
+        .w(px(panels_width.min(island_width)))
+        .children(panels)
+        .into_any_element()]
 }
 
 fn fullscreen_chrome(id: &'static str, app: &Entity<AppState>, content: Div) -> Stateful<Div> {
@@ -1482,17 +1506,144 @@ fn fullscreen_chrome(id: &'static str, app: &Entity<AppState>, content: Div) -> 
         .child(content)
 }
 
-fn chat_panel(app: &Entity<AppState>, chat: AnyView) -> AnyElement {
+fn chat_panel(app: &Entity<AppState>, share: Option<AnyElement>, chat: AnyView) -> AnyElement {
     let app = app.clone();
+    let body = v_flex()
+        .w_full()
+        .flex_1()
+        .min_h_0()
+        .children(share)
+        .child(div().flex_1().min_h_0().overflow_hidden().child(chat));
     side_panel(
         "call-chat-panel",
         "Chat",
         "Close the chat",
         move |cx| app.update(cx, |state, cx| state.toggle_call_chat(cx)),
-        chat,
+        body,
     )
     .debug_selector(|| CHAT_PANEL_TAG.into())
     .into_any_element()
+}
+
+const SHARE_WINDOW_INSET: f32 = 12.;
+const SHARE_WINDOW_RATIO: f32 = 9. / 16.;
+const SHARE_FLOAT_WIDTH: f32 = 320.;
+
+/// The live local share, pinned in the meeting chat or floating on the call
+/// when the chat is closed.
+fn local_share_window(app: &Entity<AppState>, state: &AppState, width: f32) -> Option<AnyElement> {
+    let call = state.call.as_ref()?;
+    let label = call.model.local_share.clone()?;
+    let image = call.pictures.live(&VideoKey::LocalScreen, Instant::now());
+    Some(share_window(app, &label, image, width))
+}
+
+fn local_share_float(app: &Entity<AppState>, state: &AppState) -> Option<AnyElement> {
+    let call = state.call.as_ref()?;
+    if call.chat_open {
+        return None;
+    }
+    let window = local_share_window(app, state, SHARE_FLOAT_WIDTH)?;
+    Some(
+        div()
+            .absolute()
+            .right(px(16.))
+            .bottom(px(CONTROLS_HEIGHT + 12.))
+            .w(px(SHARE_FLOAT_WIDTH))
+            .rounded(px(10.))
+            .overflow_hidden()
+            .bg(theme::surface())
+            .shadow(theme::flyout_shadow())
+            .child(window)
+            .into_any_element(),
+    )
+}
+
+fn share_window(
+    app: &Entity<AppState>,
+    label: &str,
+    image: Option<Arc<RenderImage>>,
+    width: f32,
+) -> AnyElement {
+    let picture_width = (width - 2. * SHARE_WINDOW_INSET).max(0.);
+    let picture_height = picture_width * SHARE_WINDOW_RATIO;
+    let stop = app.clone();
+    v_flex()
+        .w_full()
+        .flex_none()
+        .p(px(SHARE_WINDOW_INSET))
+        .child(
+            div()
+                .id("call-share-window")
+                .relative()
+                .w(px(picture_width))
+                .h(px(picture_height))
+                .rounded(px(8.))
+                .overflow_hidden()
+                .bg(hsla(0., 0., 0.04, 1.))
+                .child(share_picture(image))
+                .child(
+                    div()
+                        .absolute()
+                        .top(px(8.))
+                        .left(px(8.))
+                        .max_w(px(picture_width * 0.62))
+                        .h(px(22.))
+                        .px(px(8.))
+                        .flex()
+                        .items_center()
+                        .rounded_full()
+                        .bg(hsla(0., 0., 0., 0.6))
+                        .text_size(px(11.))
+                        .text_color(theme::white())
+                        .child(div().truncate().child(label.to_owned())),
+                )
+                .child(share_stop(stop)),
+        )
+        .into_any_element()
+}
+
+fn share_picture(image: Option<Arc<RenderImage>>) -> AnyElement {
+    let Some(image) = image else {
+        return div()
+            .size_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .px(px(12.))
+            .text_size(px(12.))
+            .text_color(theme::text_muted())
+            .child(WAITING_TEXT)
+            .into_any_element();
+    };
+    img(ImageSource::Render(image))
+        .size_full()
+        .object_fit(ObjectFit::Contain)
+        .into_any_element()
+}
+
+fn share_stop(app: Entity<AppState>) -> Stateful<Div> {
+    div()
+        .id("call-share-window-stop")
+        .absolute()
+        .top(px(8.))
+        .right(px(8.))
+        .h(px(22.))
+        .px(px(8.))
+        .flex()
+        .items_center()
+        .rounded_full()
+        .bg(theme::red())
+        .text_color(theme::white())
+        .text_size(px(11.))
+        .font_weight(FontWeight::SEMIBOLD)
+        .cursor_pointer()
+        .hover(|button| button.opacity(0.85))
+        .child("Stop")
+        .on_click(move |_, _, cx| {
+            cx.stop_propagation();
+            app.update(cx, |state, cx| state.stop_call_share(cx));
+        })
 }
 
 pub fn side_panel(
@@ -1546,7 +1697,7 @@ pub fn side_panel(
 
 #[cfg(test)]
 mod tests {
-    use super::{TileSize, name_plate_metrics};
+    use super::{name_plate_metrics, TileSize};
 
     #[test]
     fn small_strip_tiles_get_a_compact_name_plate() {

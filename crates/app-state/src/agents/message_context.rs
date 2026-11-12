@@ -173,9 +173,7 @@ pub fn ask_prompt(chat: &str, thread: &[ThreadMessage], question: &str) -> Strin
             .collect::<Vec<_>>()
             .join("\n")
     };
-    format!(
-        "Chat \"{chat}\"\n\n{thread_block}\n\nQuestion: {question}"
-    )
+    format!("Chat \"{chat}\"\n\n{thread_block}\n\nQuestion: {question}")
 }
 
 #[cfg(test)]

@@ -4,7 +4,7 @@ use calling::meeting::LiveMeeting;
 use calling::{
     AcceptMode, CallCommand, CallHandle, CallSpec, CallState, CallUpdate, Callee, CameraEffects,
     DeviceChoice, EndReason, EngineEvent, MicSettings, MuteCommand, Reaction, RingSignal,
-    ShareSource, VideoKey,
+    ShareKind, ShareSource, VideoKey,
 };
 use gpui_kit::*;
 
@@ -564,6 +564,7 @@ impl AppState {
             crate::agent_api::note_caption(thread, &entry.id, speaker, &entry.text, cx);
         }
         let sharer_before = call.model.screen_sharer.clone();
+        let local_share_before = call.model.local_share.is_some();
         let lobby_before = call.model.lobby_mris();
         call.model.apply(update);
         if call.model.someone_entered_the_lobby(&lobby_before)
@@ -575,6 +576,16 @@ impl AppState {
             cx.emit(AppEvent::CallTone(
                 chatsvc::sounds::CallTone::MeetingReminder,
             ));
+        }
+        if !local_share_before && call.model.local_share.is_some() && call.chat_thread().is_some()
+        {
+            call.chat_open = true;
+            call.transcript_open = false;
+            call.people_open = false;
+            self.transcript_panel = None;
+        }
+        if call.model.local_share.is_none() {
+            call.pictures.forget(&VideoKey::LocalScreen, cx);
         }
         if call.model.screen_sharer != sharer_before {
             call.pictures.forget(&VideoKey::Screen, cx);
@@ -712,6 +723,10 @@ impl AppState {
 
     pub fn start_call_share(&mut self, source: ShareSource, _cx: &mut Context<Self>) {
         self.send_call_command(CallCommand::StartShare(source));
+    }
+
+    pub fn start_portal_share(&mut self, kind: ShareKind, _cx: &mut Context<Self>) {
+        self.send_call_command(CallCommand::StartPortalShare(kind));
     }
 
     pub fn stop_call_share(&mut self, _cx: &mut Context<Self>) {

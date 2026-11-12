@@ -366,12 +366,13 @@ mod frames {
         SettingsSection::Agents,
         "Agents pages carry their own PAGE_PADDING side inset, the body narrows its side padding to keep the text edge",
     )];
-    const SETTINGS_SECTIONS: [SettingsSection; 9] = [
+    const SETTINGS_SECTIONS: [SettingsSection; 10] = [
         SettingsSection::General,
         SettingsSection::Notifications,
         SettingsSection::Appearance,
         SettingsSection::Chats,
         SettingsSection::Calls,
+        SettingsSection::Calendar,
         SettingsSection::Devices,
         SettingsSection::Agents,
         SettingsSection::Mcp,

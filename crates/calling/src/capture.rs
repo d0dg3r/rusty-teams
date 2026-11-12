@@ -6,16 +6,27 @@ use tokio::task::JoinHandle as TaskHandle;
 
 /// A running frame source; dropping it stops the capture.
 pub enum Capture {
-    Thread { stop: Arc<AtomicBool>, thread: Option<JoinHandle<()>> },
+    Thread {
+        stop: Arc<AtomicBool>,
+        thread: Option<JoinHandle<()>>,
+    },
     Task(TaskHandle<()>),
 }
 
 impl Capture {
-    pub fn spawn_thread(name: &str, body: impl FnOnce(Arc<AtomicBool>) + Send + 'static) -> std::io::Result<Self> {
+    pub fn spawn_thread(
+        name: &str,
+        body: impl FnOnce(Arc<AtomicBool>) + Send + 'static,
+    ) -> std::io::Result<Self> {
         let stop = Arc::new(AtomicBool::new(false));
         let thread_stop = stop.clone();
-        let thread = std::thread::Builder::new().name(name.to_owned()).spawn(move || body(thread_stop))?;
-        Ok(Capture::Thread { stop, thread: Some(thread) })
+        let thread = std::thread::Builder::new()
+            .name(name.to_owned())
+            .spawn(move || body(thread_stop))?;
+        Ok(Capture::Thread {
+            stop,
+            thread: Some(thread),
+        })
     }
 }
 
