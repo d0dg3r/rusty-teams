@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0-joe.9] - 2026-11-12
+
+### Fixed
+
+- macOS and Wayland share menu: «Share entire screen» and «Share a window» open
+  the system picker instead of showing «No windows found» on an empty list.
+
 ## [0.3.0-joe.8] - 2026-11-12
 
 ### Fixed
