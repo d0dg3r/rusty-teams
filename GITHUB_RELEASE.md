@@ -47,3 +47,19 @@ Publish-Skript: [`scripts/ci_forgejo_publish_release.sh`](scripts/ci_forgejo_pub
 ## GitHub Actions
 
 [`.github/workflows/build.yml`](.github/workflows/build.yml) baut **keine** Release-Binaries mehr (Notes-only / abgeschaltet). Tests können weiter unter `.github/workflows/test.yml` laufen.
+
+## Smoke `v0.3.0-joe.1` (2026-11-12)
+
+Verifiziert auf Forgejo-Release und GitHub-Spiegel:
+
+| Asset | Status |
+|-------|--------|
+| `*-amd64.deb` | ok (dpkg control geprüft) |
+| `*-x86_64.rpm` | ok |
+| `*-x86_64.pkg.tar.zst` | ok (Layout `rusty-teams` + Symlink `teams`) |
+| `*-x86_64.flatpak` | best effort — diesmal nicht veröffentlicht |
+| `*-windows-amd64.exe` | ok (Forgejo Publish + GitHub-Mirror) |
+| `*-windows-arm64.exe` | Runner `win-02` / Label `windows-arm64` offline; WiFi-WoL greift nicht (Modern Standby). Nach Power-On: `workflow_dispatch` `platforms=windows-arm` |
+| `*-macos-universal.zip` | ok |
+
+Reusable Windows-Jobs brauchen `if: … \|\| github.event_name == 'workflow_call'` und `GH_MIRROR_TOKEN` (nicht `GITHUB_MIRROR_TOKEN` als Secret-Name).
