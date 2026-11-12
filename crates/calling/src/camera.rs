@@ -16,13 +16,11 @@ use crate::capture::Capture;
 use crate::devices::{DeviceChoice, DeviceEntry};
 use crate::effects::EffectsThread;
 use crate::error::{Error, Result};
+use crate::video_quality::VideoQuality;
 
 const RETRY_PAUSE: Duration = Duration::from_millis(20);
 const BYTES_PER_PIXEL: u32 = 4;
-const CAPTURE_WIDTH: u32 = 1280;
-const CAPTURE_HEIGHT: u32 = 720;
 const CAPTURE_FPS: u32 = 30;
-const LARGEST_DOWNSCALED_HEIGHT: u32 = 1080;
 const ASPECT_WIDTH: u32 = 16;
 const ASPECT_HEIGHT: u32 = 9;
 const DIRECT_FORMATS: [FrameFormat; 2] = [FrameFormat::NV12, FrameFormat::YUYV];
@@ -86,33 +84,34 @@ fn is_widescreen(width: u32, height: u32) -> bool {
     width * ASPECT_HEIGHT == height * ASPECT_WIDTH
 }
 
-fn widescreen_tier(format: &CameraFormat) -> u8 {
+fn widescreen_tier(format: &CameraFormat, capture_height: u32) -> u8 {
     match (
         is_widescreen(format.width(), format.height()),
         format.height(),
     ) {
-        (true, CAPTURE_HEIGHT) => 3,
-        (true, height) if height > CAPTURE_HEIGHT => 2,
+        (true, height) if height == capture_height => 3,
+        (true, height) if height > capture_height => 2,
         (true, _) => 1,
         (false, _) => 0,
     }
 }
 
-fn pick_format(formats: &[CameraFormat]) -> Option<CameraFormat> {
+fn pick_format(formats: &[CameraFormat], quality: VideoQuality) -> Option<CameraFormat> {
+    let capture_height = quality.capture_height();
+    let largest = quality.largest_sensor_height();
     formats
         .iter()
         .copied()
         .filter(|format| DIRECT_FORMATS.contains(&format.format()))
         .filter(|format| format.frame_rate() >= CAPTURE_FPS)
         .filter(|format| {
-            format.height() <= CAPTURE_HEIGHT
-                || (is_widescreen(format.width(), format.height())
-                    && format.height() <= LARGEST_DOWNSCALED_HEIGHT)
+            format.height() <= capture_height
+                || (is_widescreen(format.width(), format.height()) && format.height() <= largest)
         })
         .max_by_key(|format| {
             (
-                widescreen_tier(format),
-                std::cmp::Reverse(format.height().abs_diff(CAPTURE_HEIGHT)),
+                widescreen_tier(format, capture_height),
+                std::cmp::Reverse(format.height().abs_diff(capture_height)),
                 format_rank(format.format()),
                 std::cmp::Reverse(format.frame_rate()),
             )
@@ -165,7 +164,8 @@ fn crop_i420(buffer: &I420Buffer, left: u32, top: u32, width: u32, height: u32) 
     cropped
 }
 
-pub(crate) fn fit_widescreen(mut buffer: I420Buffer) -> I420Buffer {
+pub(crate) fn fit_widescreen(mut buffer: I420Buffer, quality: VideoQuality) -> I420Buffer {
+    let capture_height = quality.capture_height();
     let (width, height) = (buffer.width(), buffer.height());
     let (crop_width, crop_height) = if width * ASPECT_HEIGHT > height * ASPECT_WIDTH {
         (even(height * ASPECT_WIDTH / ASPECT_HEIGHT), height)
@@ -182,20 +182,23 @@ pub(crate) fn fit_widescreen(mut buffer: I420Buffer) -> I420Buffer {
         );
     }
     let (width, height) = (buffer.width(), buffer.height());
-    if height > CAPTURE_HEIGHT {
-        let scaled_width = even(width * CAPTURE_HEIGHT / height);
-        return buffer.scale(scaled_width as i32, CAPTURE_HEIGHT as i32);
+    if height > capture_height {
+        let scaled_width = even(width * capture_height / height);
+        return buffer.scale(scaled_width as i32, capture_height as i32);
     }
     buffer
 }
 
-fn open_picked_format(index: CameraIndex) -> std::result::Result<Camera, nokhwa::NokhwaError> {
+fn open_picked_format(
+    index: CameraIndex,
+    quality: VideoQuality,
+) -> std::result::Result<Camera, nokhwa::NokhwaError> {
     let mut camera = Camera::new(
         index,
         RequestedFormat::new::<RgbAFormat>(RequestedFormatType::AbsoluteHighestFrameRate),
     )?;
     let formats = camera.compatible_camera_formats()?;
-    let format = pick_format(&formats).ok_or_else(|| {
+    let format = pick_format(&formats, quality).ok_or_else(|| {
         nokhwa::NokhwaError::GeneralError("no raw camera format at 30 fps".to_owned())
     })?;
     camera.set_camera_requset(RequestedFormat::new::<RgbAFormat>(
@@ -205,11 +208,14 @@ fn open_picked_format(index: CameraIndex) -> std::result::Result<Camera, nokhwa:
     Ok(camera)
 }
 
-fn open_camera(index: CameraIndex) -> std::result::Result<Camera, nokhwa::NokhwaError> {
-    if let Ok(camera) = open_picked_format(index.clone()) {
+fn open_camera(
+    index: CameraIndex,
+    quality: VideoQuality,
+) -> std::result::Result<Camera, nokhwa::NokhwaError> {
+    if let Ok(camera) = open_picked_format(index.clone(), quality) {
         return Ok(camera);
     }
-    let wanted = Resolution::new(CAPTURE_WIDTH, CAPTURE_HEIGHT);
+    let wanted = Resolution::new(quality.capture_width(), quality.capture_height());
     let mut requests: Vec<RequestedFormatType> = DIRECT_FORMATS
         .into_iter()
         .map(|frame_format| {
@@ -302,13 +308,14 @@ fn direct_i420(
 
 pub fn start_camera(
     choice: &DeviceChoice,
+    quality: VideoQuality,
     blur: Arc<BlurSettings>,
     deliver: impl FnMut(I420Buffer) + Send + 'static,
     failed: impl FnOnce(String) + Send + 'static,
 ) -> Result<Capture> {
     let index = camera_index(choice);
     Capture::spawn_thread("camera", move |stop| {
-        let mut camera = match open_camera(index) {
+        let mut camera = match open_camera(index, quality) {
             Ok(camera) => camera,
             Err(error) => return failed(error.to_string()),
         };
@@ -343,7 +350,7 @@ pub fn start_camera(
                         i420_from_rgba(&decoded.into_raw(), width, height)
                     }
                 };
-            effects.submit(fit_widescreen(buffer));
+            effects.submit(fit_widescreen(buffer, quality));
         }
         let _ = camera.stop_stream();
     })
@@ -421,13 +428,13 @@ mod tests {
             format(1280, 720, FrameFormat::MJPEG, 30),
         ];
         assert_eq!(
-            pick_format(&formats),
+            pick_format(&formats, VideoQuality::P720),
             Some(format(640, 480, FrameFormat::YUYV, 30))
         );
     }
 
     #[test]
-    fn the_largest_height_up_to_720_wins_then_nv12() {
+    fn auto_prefers_1080p_nv12_over_720p() {
         let formats = [
             format(1920, 1080, FrameFormat::NV12, 30),
             format(640, 480, FrameFormat::NV12, 30),
@@ -435,7 +442,11 @@ mod tests {
             format(1280, 720, FrameFormat::NV12, 30),
         ];
         assert_eq!(
-            pick_format(&formats),
+            pick_format(&formats, VideoQuality::Auto),
+            Some(format(1920, 1080, FrameFormat::NV12, 30))
+        );
+        assert_eq!(
+            pick_format(&formats, VideoQuality::P720),
             Some(format(1280, 720, FrameFormat::NV12, 30))
         );
     }
@@ -448,20 +459,30 @@ mod tests {
             format(640, 480, FrameFormat::NV12, 30),
         ];
         assert_eq!(
-            pick_format(&formats),
+            pick_format(&formats, VideoQuality::P720),
             Some(format(1280, 720, FrameFormat::YUYV, 30))
         );
     }
 
     #[test]
-    fn without_720p_the_order_is_1080p_then_360p_then_4_3() {
+    fn locked_720_keeps_1080_as_downscale_candidate_but_prefers_exact_720() {
         let full_hd = format(1920, 1080, FrameFormat::NV12, 30);
+        let hd = format(1280, 720, FrameFormat::NV12, 30);
         let small = format(640, 360, FrameFormat::NV12, 30);
         let classic = format(960, 720, FrameFormat::NV12, 30);
-        assert_eq!(pick_format(&[classic, small, full_hd]), Some(full_hd));
-        assert_eq!(pick_format(&[classic, small]), Some(small));
         assert_eq!(
-            pick_format(&[classic, format(2560, 1440, FrameFormat::NV12, 30)]),
+            pick_format(&[classic, small, full_hd], VideoQuality::Auto),
+            Some(full_hd)
+        );
+        assert_eq!(
+            pick_format(&[classic, small, full_hd, hd], VideoQuality::P720),
+            Some(hd)
+        );
+        assert_eq!(
+            pick_format(
+                &[classic, format(2560, 1440, FrameFormat::NV12, 30)],
+                VideoQuality::P720
+            ),
             Some(classic)
         );
     }
@@ -481,7 +502,7 @@ mod tests {
 
     #[test]
     fn a_4_3_frame_is_centre_cropped_to_16_9() {
-        let cropped = fit_widescreen(gradient(960, 720));
+        let cropped = fit_widescreen(gradient(960, 720), VideoQuality::P720);
         assert_eq!((cropped.width(), cropped.height()), (960, 540));
         let (stride_y, stride_u, _) = cropped.strides();
         let (plane_y, plane_u, _) = cropped.data();
@@ -492,13 +513,18 @@ mod tests {
     }
 
     #[test]
-    fn a_widescreen_frame_passes_and_1080p_is_scaled_to_720p() {
-        assert_eq!(fit_widescreen(gradient(1280, 720)).width(), 1280);
-        let scaled = fit_widescreen(gradient(1920, 1080));
+    fn auto_keeps_1080p_and_720_lock_scales_it_down() {
+        assert_eq!(
+            fit_widescreen(gradient(1280, 720), VideoQuality::Auto).width(),
+            1280
+        );
+        let kept = fit_widescreen(gradient(1920, 1080), VideoQuality::Auto);
+        assert_eq!((kept.width(), kept.height()), (1920, 1080));
+        let scaled = fit_widescreen(gradient(1920, 1080), VideoQuality::P720);
         assert_eq!((scaled.width(), scaled.height()), (1280, 720));
-        let wide = fit_widescreen(gradient(2560, 1080));
-        assert_eq!((wide.width(), wide.height()), (1280, 720));
-        let classic = fit_widescreen(gradient(640, 480));
+        let wide = fit_widescreen(gradient(2560, 1440), VideoQuality::Auto);
+        assert_eq!((wide.width(), wide.height()), (1920, 1080));
+        let classic = fit_widescreen(gradient(640, 480), VideoQuality::Auto);
         assert_eq!((classic.width(), classic.height()), (640, 360));
     }
 
@@ -508,8 +534,8 @@ mod tests {
             format(1280, 720, FrameFormat::MJPEG, 30),
             format(1280, 720, FrameFormat::YUYV, 15),
         ];
-        assert_eq!(pick_format(&formats), None);
-        assert_eq!(pick_format(&[]), None);
+        assert_eq!(pick_format(&formats, VideoQuality::Auto), None);
+        assert_eq!(pick_format(&[], VideoQuality::Auto), None);
     }
 
     #[test]

@@ -2225,6 +2225,15 @@ async fn drive(
                         control.send(CallUpdate::Notice(format!("Camera could not start: {error}")));
                     }
                 }
+                Some(CallCommand::SetVideoQuality(quality)) => {
+                    local_video.set_video_quality(quality);
+                    if let Err(error) = local_video.refresh_camera_capture(&camera_choice) {
+                        control.send(CallUpdate::Notice(format!("Camera could not restart: {error}")));
+                    }
+                    if video.set_video_quality(quality) {
+                        send_receive_change(control, video.reselect(&roster));
+                    }
+                }
                 Some(CallCommand::StartPortalShare(kind)) => {
                     let direct = layout == Layout::OneToOne && negotiator.path() == MediaPath::Direct;
                     if !remote_set {
@@ -2684,7 +2693,8 @@ async fn drive(
                 if layout == Layout::Conference
                     && let Some(size) = local_video.camera_size()
                     && let Some(url) = media_links.get("applyChannelParameters").cloned()
-                    && let Some(body) = send_capabilities.body_for(size)
+                    && let Some(body) =
+                        send_capabilities.body_for(size, local_video.video_quality())
                 {
                     let signaling = signaling.clone();
                     let timeline = timeline.clone();

@@ -48,6 +48,7 @@ const DEMO_LIVE_MINUTES: i64 = 60;
 const ORGID_PREFIX: &str = "8:orgid:";
 pub const SHARE_SOUND_META_KEY: &str = "call_share_sound";
 const CAMERA_META_KEY: &str = "call_camera";
+const VIDEO_QUALITY_META_KEY: &str = "call_video_quality";
 const INPUT_META_KEY: &str = "call_input";
 pub fn apply_sound_output(choice: &DeviceChoice) {
     let device_key = match choice {
@@ -93,6 +94,19 @@ pub fn load_camera_effects(store: &store::Store) -> CameraEffects {
         .map_or_else(CameraEffects::default, |value| {
             CameraEffects::from_meta(&value)
         })
+}
+
+pub fn load_video_quality(store: &store::Store) -> calling::VideoQuality {
+    store
+        .meta(VIDEO_QUALITY_META_KEY)
+        .ok()
+        .flatten()
+        .as_deref()
+        .map_or_else(calling::VideoQuality::default, calling::VideoQuality::from_meta)
+}
+
+pub fn save_video_quality(store: &store::Store, quality: calling::VideoQuality) {
+    let _ = store.set_meta(VIDEO_QUALITY_META_KEY, quality.to_meta());
 }
 
 fn device_meta(choice: &DeviceChoice) -> &str {
@@ -286,6 +300,7 @@ impl AppState {
         if self.call_mic != MicSettings::default() {
             self.send_call_command(CallCommand::SetMicSettings(self.call_mic));
         }
+        self.send_call_command(CallCommand::SetVideoQuality(self.call_video_quality));
         if let Some(call) = self.call.as_mut() {
             call.model.background = self.call_background.clone();
             call.model.camera = self.call_camera.clone();
@@ -684,6 +699,17 @@ impl AppState {
         self.call_mic = settings;
         save_mic(&self.store, settings);
         self.send_call_command(CallCommand::SetMicSettings(settings));
+        cx.notify();
+    }
+
+    pub fn set_call_video_quality(
+        &mut self,
+        quality: calling::VideoQuality,
+        cx: &mut Context<Self>,
+    ) {
+        self.call_video_quality = quality;
+        save_video_quality(&self.store, quality);
+        self.send_call_command(CallCommand::SetVideoQuality(quality));
         cx.notify();
     }
 
@@ -1457,12 +1483,15 @@ mod tests {
     use calling::{
         BackgroundChoice, CallCommand, CallControl, CallState, CallUpdate, CameraEffects,
         DeviceChoice, EndKind, EndReason, EngineEvent, HoldState, Reaction, RecordingKind,
-        StopScope, call_channel,
+        StopScope, VideoQuality, call_channel,
     };
     use gpui_kit::{AppContext as _, Entity, TestAppContext};
     use store::{ChatRecord, MemberRecord, Store};
 
-    use super::{ActiveCall, CallModel, load_camera, load_camera_effects, load_input, load_output};
+    use super::{
+        ActiveCall, CallModel, load_camera, load_camera_effects, load_input, load_output,
+        load_video_quality,
+    };
     use crate::app_state::{AppEvent, AppState, Mode, Selection};
     use crate::call::TransferCandidate;
     use crate::call::background::BackgroundPick;
@@ -1685,6 +1714,7 @@ mod tests {
                 "headset".into()
             )))
         );
+        assert!(commands.contains(&CallCommand::SetVideoQuality(VideoQuality::Auto)));
         assert_eq!(
             load_input(&store),
             DeviceChoice::Device("unplugged-mic".into())
@@ -1735,6 +1765,28 @@ mod tests {
         assert_eq!(load_camera_effects(&store), effects);
         let reopened = cx.update(|cx| cx.new(|_| AppState::new(store.clone(), Mode::default())));
         assert_eq!(cx.update(|cx| reopened.read(cx).call_effects), effects);
+    }
+
+    #[gpui_kit::test]
+    fn the_video_quality_is_remembered_and_sent_to_the_call(cx: &mut TestAppContext) {
+        let (app, mut control) = app_with_commands(cx, live_meeting(false), None);
+        let store = cx.update(|cx| app.read(cx).store.clone());
+        assert_eq!(load_video_quality(&store), VideoQuality::Auto);
+        cx.update(|cx| {
+            app.update(cx, |state, cx| {
+                state.set_call_video_quality(VideoQuality::P1080, cx)
+            })
+        });
+        assert_eq!(
+            control.try_recv_command(),
+            Some(CallCommand::SetVideoQuality(VideoQuality::P1080))
+        );
+        assert_eq!(load_video_quality(&store), VideoQuality::P1080);
+        let reopened = cx.update(|cx| cx.new(|_| AppState::new(store.clone(), Mode::default())));
+        assert_eq!(
+            cx.update(|cx| reopened.read(cx).call_video_quality),
+            VideoQuality::P1080
+        );
     }
 
     #[gpui_kit::test]

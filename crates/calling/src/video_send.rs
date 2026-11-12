@@ -17,6 +17,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::background::BackgroundPicture;
 use crate::blur::BlurSettings;
 use crate::camera::start_camera;
+use crate::video_quality::VideoQuality;
 use crate::capture::Capture;
 use crate::control::{CallCommand, CallUpdate};
 use crate::devices::DeviceChoice;
@@ -200,6 +201,7 @@ pub struct LocalVideo {
     motion: bool,
     share_fps: Arc<AtomicU32>,
     camera_preview: bool,
+    quality: VideoQuality,
     portal_generation: u64,
     portal_armed: bool,
     portal_keep: bool,
@@ -226,11 +228,20 @@ impl LocalVideo {
             motion: false,
             share_fps: Arc::new(AtomicU32::new(SCREEN_SHARE_FPS)),
             camera_preview: false,
+            quality: VideoQuality::default(),
             portal_generation: 0,
             portal_armed: false,
             portal_keep: false,
             portal_bound: false,
         }
+    }
+
+    pub fn video_quality(&self) -> VideoQuality {
+        self.quality
+    }
+
+    pub fn set_video_quality(&mut self, quality: VideoQuality) {
+        self.quality = quality;
     }
 
     pub fn set_motion(&mut self, motion: bool) {
@@ -578,11 +589,29 @@ impl LocalVideo {
             )),
             _ => start_camera(
                 choice,
+                self.quality,
                 self.blur.clone(),
                 move |buffer| sink.push(buffer),
                 self.report_failure("Camera"),
             )?,
         })
+    }
+
+    /// Restart capture with the current quality if the camera is already running.
+    pub fn refresh_camera_capture(&mut self, choice: &DeviceChoice) -> Result<()> {
+        if self.camera.capture.is_none() {
+            return Ok(());
+        }
+        let preview = self.camera_preview;
+        self.camera.capture = None;
+        self.camera.capture = Some(self.capture_camera(choice)?);
+        self.camera_preview = preview;
+        if !preview {
+            if let Some(lines) = self.lines.as_ref() {
+                Self::begin_sending(&lines.camera.sender(), &self.camera.track)?;
+            }
+        }
+        Ok(())
     }
 
     pub fn stop_camera(&mut self) {
