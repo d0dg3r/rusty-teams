@@ -1,0 +1,31 @@
+# Maintainer: devops-geek <admin@devops-geek.net>
+# Gebaut aus einem vorgebauten Binary (CI), nicht aus Quellen im chroot.
+pkgname=rusty-teams
+pkgver=0.0.0
+pkgrel=1
+pkgdesc='Native Microsoft Teams chat client (fork)'
+arch=('x86_64')
+url='https://forgejo.lan/devops-geek/rusty-teams'
+license=('MIT')
+depends=('glib2' 'alsa-lib' 'fontconfig' 'libxkbcommon' 'wayland')
+optdepends=(
+  'pipewire: screen share audio / portal'
+  'xdg-desktop-portal-hyprland: Wayland ScreenCast on Hyprland'
+  'xdg-desktop-portal-kde: Wayland ScreenCast on KDE'
+  'xdg-desktop-portal-gnome: Wayland ScreenCast on GNOME'
+)
+source=(
+  'rusty-teams.bin'
+  'rusty-teams.desktop'
+  'rusty-teams.png'
+)
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm755 "${srcdir}/rusty-teams.bin" "${pkgdir}/opt/rusty-teams/rusty-teams"
+  install -Dm644 "${srcdir}/rusty-teams.desktop" "${pkgdir}/usr/share/applications/rusty-teams.desktop"
+  install -Dm644 "${srcdir}/rusty-teams.png" "${pkgdir}/usr/share/icons/hicolor/256x256/apps/rusty-teams.png"
+  install -d "${pkgdir}/usr/bin"
+  ln -sf /opt/rusty-teams/rusty-teams "${pkgdir}/usr/bin/rusty-teams"
+  ln -sf /opt/rusty-teams/rusty-teams "${pkgdir}/usr/bin/teams"
+}

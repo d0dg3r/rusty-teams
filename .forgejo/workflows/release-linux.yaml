@@ -1,0 +1,82 @@
+# Forgejo: Linux — deb, rpm, Arch pkg, Flatpak. Runner: ubuntu-latest.
+
+name: Release (Linux)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: release-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CC: clang-21
+      CXX: clang++-21
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: clang-21
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.forgejo/actions/setup-linux
+
+      - name: Install packaging tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install --no-install-recommends -y \
+            dpkg-dev fakeroot rpm \
+            flatpak flatpak-builder \
+            elfutils jq
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: release-linux-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build
+        run: cargo build -p app --release
+
+      - name: Package
+        env:
+          BINARY_PATH: ${{ github.workspace }}/target/release/teams
+        run: |
+          set -euo pipefail
+          ver="${GITHUB_REF_NAME#v}"
+          if [[ "${GITHUB_REF_TYPE:-}" != "tag" ]]; then
+            ver="0.0.0-dev"
+          fi
+          export RELEASE_VERSION="$ver"
+          mkdir -p dist
+          packaging/debian/build_deb.sh
+          packaging/fedora/build_rpm.sh
+          packaging/archlinux/build_pkg.sh
+          packaging/flatpak/build_flatpak.sh
+          ls -la dist/
+
+      - name: Publish Forgejo + GitHub mirror
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_NAME: ${{ github.ref_name }}
+          RELEASE_PRERELEASE: ${{ contains(github.ref_name, '-') }}
+          RELEASE_TARGET: ${{ github.sha }}
+          RELEASE_FILES: dist/*.deb dist/*.rpm dist/*.pkg.tar.zst dist/*.flatpak
+          GITHUB_MIRROR_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          GITHUB_MIRROR_REPO: d0dg3r/rusty-teams
+        run: scripts/ci_forgejo_publish_release.sh

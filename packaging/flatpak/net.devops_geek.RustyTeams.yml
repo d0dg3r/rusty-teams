@@ -1,0 +1,35 @@
+# Flatpak-Manifest: installiert ein vorgebautes Binary (CI Stage).
+# App-ID: net.devops_geek.RustyTeams
+app-id: net.devops_geek.RustyTeams
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: rusty-teams
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --filesystem=xdg-download
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --talk-name=org.freedesktop.portal.ScreenCast
+modules:
+  - name: rusty-teams
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 rusty-teams /app/bin/rusty-teams
+      - ln -sf rusty-teams /app/bin/teams
+      - install -Dm644 rusty-teams.desktop /app/share/applications/net.devops_geek.RustyTeams.desktop
+      - install -Dm644 rusty-teams.png /app/share/icons/hicolor/256x256/apps/net.devops_geek.RustyTeams.png
+      - install -Dm644 net.devops_geek.RustyTeams.metainfo.xml /app/share/metainfo/net.devops_geek.RustyTeams.metainfo.xml
+    sources:
+      - type: file
+        path: stage/rusty-teams
+      - type: file
+        path: stage/rusty-teams.desktop
+      - type: file
+        path: stage/rusty-teams.png
+      - type: file
+        path: stage/net.devops_geek.RustyTeams.metainfo.xml
