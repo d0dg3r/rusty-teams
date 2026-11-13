@@ -1,7 +1,9 @@
-# ADR 0009: Bundled Google OAuth Desktop client
+---
+status: accepted
+date: 2026-11-13
+---
 
-- Status: proposed
-- Date: 2026-11-13
+# ADR 0009: Bundled Google OAuth Desktop client
 
 ## Context
 
@@ -12,6 +14,8 @@ Options were: env vars only, a settings field for the client id, or one project 
 ## Decision
 
 Official release builds compile in the project Desktop client id (and optional secret) via `option_env!`. Runtime env vars still override for developers. Users only click Connect Google; tokens stay on the device (see ADR 0002). `v*` tags refuse to build without the Forgejo Actions secret for the client id.
+
+Local Linux installs use `scripts/install-linux-local.sh`, which rebuilds with `.env.google.local` when present, so a bare `cargo build` copy does not silently drop Google calendars.
 
 ## Consequences
 
