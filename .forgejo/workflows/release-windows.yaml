@@ -1,0 +1,71 @@
+# Forgejo: Windows amd64 — requires ci-runner-windows-01.
+
+name: Release (Windows)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: release-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ci-runner-windows-01
+    timeout-minutes: 180
+    env:
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      GIT_SSL_NO_VERIFY: "true"
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.forgejo/actions/setup-rust
+
+      - uses: ./.forgejo/actions/setup-windows
+
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build -p app --release \
+            --config "patch.crates-io.gpui-pre-windows.path=\"$GPUI_PRE_WINDOWS_PATCHED\""
+
+      - name: Stage asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" && "${GITHUB_REF_NAME}" == v* ]]; then
+            ver="${GITHUB_REF_NAME#v}"
+          else
+            ver="${RELEASE_TAG_OVERRIDE:-v0.3.0-joe.1}"
+            ver="${ver#v}"
+          fi
+          mkdir -p dist
+          cp target/release/teams.exe "dist/rusty-teams-${ver}-windows-amd64.exe"
+          ls -la dist/
+
+      - name: Publish Forgejo + GitHub mirror
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_TARGET: ${{ github.sha }}
+          RELEASE_FILES: dist/*.exe
+          GITHUB_MIRROR_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          GITHUB_MIRROR_REPO: d0dg3r/rusty-teams
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" && "${GITHUB_REF_NAME}" == v* ]]; then
+            export RELEASE_TAG="$GITHUB_REF_NAME"
+          else
+            export RELEASE_TAG="${RELEASE_TAG_OVERRIDE:-v0.3.0-joe.1}"
+          fi
+          export RELEASE_NAME="$RELEASE_TAG"
+          export RELEASE_PRERELEASE=true
+          scripts/ci_forgejo_publish_release.sh

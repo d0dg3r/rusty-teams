@@ -1,0 +1,74 @@
+name: Set up Rust
+description: >-
+  Installs a stable Rust toolchain via rustup. Prefer this over
+  dtolnay/rust-toolchain on Forgejo — data.forgejo.org has no mirror of that action.
+inputs:
+  targets:
+    description: Extra rustup targets (space-separated)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Install rustup toolchain
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Windows runners need the MSVC toolchain (gpui / onnx / existing CI).
+        # Git Bash on Windows-on-ARM often reports uname -m=x86_64 (x64 Git).
+        # Prefer PROCESSOR_ARCHITECTURE / PROCESSOR_IDENTIFIER from the real host.
+        default_host=""
+        case "$(uname -s 2>/dev/null || echo unknown)" in
+          MINGW*|MSYS*|CYGWIN*|Windows_NT)
+            arch_hint="$(uname -m 2>/dev/null || echo x86_64)"
+            proc_arch="${PROCESSOR_ARCHITECTURE:-}"
+            proc_id="${PROCESSOR_IDENTIFIER:-}"
+            # Also check Wow64 view of the native arch.
+            proc_arch_wow="${PROCESSOR_ARCHITEW6432:-}"
+            if [[ "$proc_arch" == ARM64 || "$proc_arch_wow" == ARM64 || \
+                  "$arch_hint" == aarch64 || "$arch_hint" == arm64 || \
+                  "$proc_id" == *ARM* || "$proc_id" == *Qualcomm* ]]; then
+              default_host=aarch64-pc-windows-msvc
+            else
+              default_host=x86_64-pc-windows-msvc
+            fi
+            echo "Windows rustup host=$default_host (uname=$arch_hint PROCESSOR_ARCHITECTURE=$proc_arch)"
+            ;;
+        esac
+        rustup_args=(-y --default-toolchain stable)
+        if [[ -n "$default_host" ]]; then
+          rustup_args+=(--default-host "$default_host")
+        fi
+        if ! command -v rustup >/dev/null 2>&1; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- "${rustup_args[@]}"
+          # shellcheck disable=SC1091
+          if [[ -f "$HOME/.cargo/env" ]]; then
+            source "$HOME/.cargo/env"
+          fi
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          # Git-Bash on Windows: cargo may live under the profile path.
+          for cargo_bin in \
+            "${USERPROFILE:-}/.cargo/bin" \
+            "${HOME}/.cargo/bin"; do
+            [[ -n "$cargo_bin" && -d "$cargo_bin" ]] || continue
+            echo "$cargo_bin" >> "$GITHUB_PATH"
+          done
+        fi
+        export PATH="${HOME}/.cargo/bin:${USERPROFILE:-}/.cargo/bin:${PATH}"
+        if [[ -n "$default_host" ]]; then
+          rustup set default-host "$default_host" || true
+          # Existing installs may still have the wrong host; install + select the right one.
+          rustup toolchain install "stable-${default_host}"
+          rustup default "stable-${default_host}"
+          rustup show
+        else
+          rustup default stable
+          rustup update stable
+        fi
+        # Extra targets (e.g. macOS universal x86_64 slice)
+        for target in ${{ inputs.targets }}; do
+          [[ -n "$target" ]] || continue
+          rustup target add "$target"
+        done
+        rustc --version
+        cargo --version

@@ -1,0 +1,44 @@
+schema: spec-driven
+
+context: |
+  Language: German (Schweizer Schreibung: kein Eszett, Anführungszeichen «…»).
+  All artifacts must be written in German.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  OpenSpec hält beobachtbares Produktverhalten (Capabilities, Requirements, Scenarios).
+  Es ersetzt nicht AGENTS.md, .cursor/rules/ (fork-workflow, openspec-cli-path) oder
+  die Service-/Code-Doku — dort bleibt, wie Agents arbeiten, pushen und releasen.
+
+  Specs beschreiben nur Verhalten und testbare Szenarien. Keine Rust-Typen,
+  keine Crate-Namen als Pflicht, keine Implementierungsschritte (die gehören
+  in design.md oder tasks.md).
+
+  Baseline-Hauptspecs unter openspec/specs/ sind der Fork-Jetztstand.
+  Danach wachsen Specs nur noch mit dem nächsten Change. Reines Refactoring,
+  Tooling oder Doku: skip_specs: true am Change.
+
+  Remotes: fork = d0dg3r/rusty-teams (entwickeln + Releases);
+  origin = danieldaeschle/rusty-teams (nur gezielte Upstream-PRs).
+
+rules:
+  proposal:
+    - State why now, what changes, and which capabilities are new or modified.
+    - Mark out of scope explicitly when behaviour is unchanged (skip_specs).
+  specs:
+    - One capability path per durable system behaviour (kebab-case).
+    - Prefer scenarios over prose; keep ADDED/MODIFIED/REMOVED deltas precise.
+  design:
+    - Point at real repo paths (crates/, scripts/) when useful.
+    - Respect the fork-vs-upstream remote rules when delivery is affected.
+  tasks:
+    - Checklist items that an agent can check off; include verify via
+      cargo test -p <crate> --lib (or a narrower filter) when code changes.
+
+operations:
+  apply:
+    guidance:
+      - Follow AGENTS.md and alwaysApply rules while implementing.
+      - Push everyday work to fork, never to origin.
+  archive:
+    guidance:
+      - Merge deltas into openspec/specs/; summarise what behaviour is now SoT.

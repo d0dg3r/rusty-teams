@@ -1,0 +1,57 @@
+# Forgejo: macOS universal — forgejo-runner-mac-01 (label macos-arm64).
+
+name: Release (macOS)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: release-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-arm64
+    timeout-minutes: 180
+    env:
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.forgejo/actions/setup-rust
+        with:
+          targets: aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Build universal .app zip
+        run: scripts/build-macos.sh crates/app teams
+
+      - name: Stage asset
+        run: |
+          set -euo pipefail
+          ver="${GITHUB_REF_NAME#v}"
+          if [[ "${GITHUB_REF_TYPE:-}" != "tag" ]]; then
+            ver="0.0.0-dev"
+          fi
+          mkdir -p dist
+          cp target/universal/release/teams-macos.zip "dist/rusty-teams-${ver}-macos-universal.zip"
+          ls -la dist/
+
+      - name: Publish Forgejo + GitHub mirror
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_NAME: ${{ github.ref_name }}
+          RELEASE_PRERELEASE: ${{ contains(github.ref_name, '-') }}
+          RELEASE_TARGET: ${{ github.sha }}
+          RELEASE_FILES: dist/*.zip
+          GITHUB_MIRROR_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          GITHUB_MIRROR_REPO: d0dg3r/rusty-teams
+        run: scripts/ci_forgejo_publish_release.sh

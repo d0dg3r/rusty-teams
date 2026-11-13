@@ -1,0 +1,126 @@
+# Changelog
+
+## [0.3.0-joe.10] - 2026-11-13
+
+### Changed
+
+- Synced upstream `danieldaeschle/rusty-teams` after merge of Joe PRs #11–#22
+  (Linux Chrome/emoji/Pulse, calendar scroll, Wayland/macOS share, Google Calendar,
+  agents, camera, UI locale). Fork SoT kept: Forgejo CI/packaging, OpenSpec, changelog.
+
+
+## [0.3.0-joe.9] - 2026-11-12
+
+### Fixed
+
+- macOS and Wayland share menu: «Share entire screen» and «Share a window» open
+  the system picker instead of showing «No windows found» on an empty list.
+
+## [0.3.0-joe.8] - 2026-11-12
+
+### Fixed
+
+- macOS release build links the `browser` crate, so managed Chrome sign-in compiles
+  on the macOS runner (`v0.3.0-joe.7` failed with an unresolved `browser` crate).
+
+## [0.3.0-joe.7] - 2026-11-12
+
+### Added
+
+- macOS managed Chrome sign-in: starts Chrome/Chromium on debug port 9222 with a
+  profile under Application Support, shows the window for login, then returns to
+  headless (same path as Linux); `--endpoint` still attaches to an external Chrome.
+- macOS screen share uses the ScreenCaptureKit system dialog (no empty source list).
+
+### Changed
+
+- Non-Windows mic Auto/Low remain on the ADM device track (Pulse / CoreAudio);
+  OpenSpec baseline covers `macos-sign-in`, `macos-call-audio`, and screen-share
+  on macOS.
+
+## [0.3.0-joe.6] - 2026-11-12
+
+### Added
+
+- Synced upstream `danieldaeschle/rusty-teams` (through `b07109f`): dedicated
+  call/meeting window, Teams-like call toolbar and gallery paging, join preview,
+  splash with loading progress, native Manage team page, out-of-office notice,
+  chat message appear animations and in-chat typing indicator.
+- MCP: write_message / add_reaction with review-before-send, free-time lookup and
+  meeting organization; meeting proposals persist across restart
+  (store migrations `0030`, `0031`).
+
+### Changed
+
+- Workspace version aligned to `0.3.0` with upstream; Joe release tags remain
+  `v0.3.0-joe.N`.
+- Fork features kept across the merge: UI locale DE/EN, camera quality Auto/720p/1080p,
+  Wayland ScreenCast portal, Google calendar accounts, agent providers, Forgejo
+  CI/packaging, and the bundled CBDT emoji font.
+
+## [0.3.0-joe.5] - 2026-11-12
+
+### Added
+
+- UI language: English and German (Germany), with OS locale on first start
+  (`de*` → German, otherwise English) and a persisted override under Appearance.
+- `rust-i18n` catalog for app chrome, settings, calls notices, tray, and agents;
+  missing keys fall back to English.
+
+### Changed
+
+- Call notices use stable i18n keys (optional detail payload) and are localized
+  at the UI boundary instead of shipping English literals from calling.
+
+## [0.3.0-joe.4] - 2026-11-12
+
+### Fixed
+
+- Camera capture prefers MJPEG 1080p/720p at 30 fps on USB 2.0 webcams (e.g. C930e)
+  instead of falling back to YUYV 1080p at 5 fps; opens under 30 fps are rejected
+  when a faster format exists.
+- MJPEG frames decode locally (zune-jpeg → I420) with reusable buffers.
+- UVC best-effort: disable exposure dynamic framerate and set 50 Hz power-line
+  frequency; call reports log the chosen format plus capture fps / decode time.
+
+## [0.3.0-joe.3] - 2026-11-12
+
+### Fixed
+
+- 1:1 escalation answers no longer emit an extra folded gallery m-line (`mid 3-0`),
+  which triggered Teams `InvalidNumberOfMedia` / «Incorrect number of media».
+- Same-peer renegotiation keeps a short grace after the answer timeout so a late
+  camera answer (`recvonly`) can still be applied instead of rolling back send.
+- Camera open survives UVC `CameraFormat` property failures (Closest NV12 first;
+  AbsoluteHighest only as last resort).
+
+## [0.3.0-joe.2] - 2026-11-12
+
+### Added
+
+- Camera video quality setting: Auto, 720p, or 1080p (no 4K), in call and prejoin
+  camera menus; choice persists and applies to capture plus stage receive limits.
+
+### Changed
+
+- Auto / 1080p prefer 1080p capture and advertise matching send capabilities;
+  stage receive uses 1080p-class budgets when allowed.
+- CI tests run on Forgejo only; GitHub Actions are mirror stubs.
+
+## [0.3.0-joe.1] - 2026-11-12
+
+### Added
+
+- Forgejo as source of truth (`devops-geek/rusty-teams`) with push mirror to GitHub.
+- Linux release packages: `.deb`, `.rpm`, Arch `.pkg.tar.zst`, Flatpak bundle.
+- Forgejo Actions builds for Windows amd64, Windows ARM64, and macOS universal.
+- Local share preview window in the meeting chat (and in the mini call window).
+
+### Fixed
+
+- Wayland screen share via xdg-desktop-portal (KDE, GNOME, Hyprland) without the
+  «shared source is gone» toast after confirming the desktop dialog.
+
+## [0.3.0] - 2026-11-10
+
+Upstream-aligned baseline on the fork before Forgejo SoT cutover.

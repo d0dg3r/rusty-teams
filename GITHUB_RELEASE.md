@@ -1,0 +1,65 @@
+---
+title: Releases (Forgejo + GitHub)
+---
+
+# Releases (Forgejo + GitHub)
+
+**SoT für Code und Release-Binaries ist Forgejo** (`devops-geek/rusty-teams`). GitHub (`d0dg3r/rusty-teams`) bekommt denselben CHANGELOG-Body und dieselben Assets per API-Spiegel — kein zweiter Compile auf GitHub-hosted Runners.
+
+## Remotes
+
+| Remote | URL | Rolle |
+|--------|-----|--------|
+| `origin` | `https://forgejo.lan/devops-geek/rusty-teams` | SoT |
+| `github` | `https://github.com/d0dg3r/rusty-teams` | Offsite-Spiegel |
+| `upstream` | `https://github.com/danieldaeschle/rusty-teams` | Upstream-PRs |
+
+## Was ein Tag `v*` baut
+
+Workflow: [`.forgejo/workflows/release.yaml`](.forgejo/workflows/release.yaml).
+
+| Plattform | Runner | Asset |
+|-----------|--------|-------|
+| Debian / Ubuntu | `ubuntu-latest` | `rusty-teams-<ver>-amd64.deb` |
+| Fedora / RHEL | `ubuntu-latest` | `rusty-teams-<ver>-x86_64.rpm` |
+| Arch | `ubuntu-latest` | `rusty-teams-<ver>-x86_64.pkg.tar.zst` |
+| Flatpak | `ubuntu-latest` | `rusty-teams-<ver>-x86_64.flatpak` (best effort; job continues without it) |
+| Windows amd64 | `ci-runner-windows-01` | `rusty-teams-<ver>-windows-amd64.exe` |
+| Windows ARM64 | `windows-arm64` | `rusty-teams-<ver>-windows-arm64.exe` |
+| macOS universal | `macos-arm64` | `rusty-teams-<ver>-macos-universal.zip` |
+
+Tags mit `-` (z. B. `v0.3.0-joe.1`) sind `prerelease`.
+
+## Secrets (Forgejo-Repo)
+
+| Secret | Zweck |
+|--------|--------|
+| `GH_MIRROR_TOKEN` | GitHub PAT mit `contents: write` auf `d0dg3r/rusty-teams` (Forgejo verbietet den Prefix `GITHUB_` in Secret-Namen). Die Workflows setzen daraus die Env `GITHUB_MIRROR_TOKEN` fürs Publish-Skript. |
+
+Publish-Skript: [`scripts/ci_forgejo_publish_release.sh`](scripts/ci_forgejo_publish_release.sh).
+
+## Vor dem Tag
+
+1. `CHANGELOG.md`: Sektion `## [X.Y.Z] - YYYY-MM-DD` für die Version ohne führendes `v`.
+2. Tag auf Forgejo pushen: `git tag v0.3.0-joe.1 && git push origin v0.3.0-joe.1`.
+3. Forgejo Actions laufen lassen; GitHub-Release erscheint mit denselben Dateien.
+
+## GitHub Actions
+
+GitHub ist **nur Spiegel** — keine Tests, keine Release-Compiles. CI: [`.forgejo/workflows/test.yaml`](.forgejo/workflows/test.yaml) (Push `main`). Releases: [`.forgejo/workflows/release.yaml`](.forgejo/workflows/release.yaml). Die Dateien unter `.github/workflows/` sind Stub ohne Push-Trigger.
+
+## Smoke `v0.3.0-joe.1` (2026-11-12)
+
+Verifiziert auf Forgejo-Release und GitHub-Spiegel:
+
+| Asset | Status |
+|-------|--------|
+| `*-amd64.deb` | ok (dpkg control geprüft) |
+| `*-x86_64.rpm` | ok |
+| `*-x86_64.pkg.tar.zst` | ok (Layout `rusty-teams` + Symlink `teams`) |
+| `*-x86_64.flatpak` | best effort — diesmal nicht veröffentlicht |
+| `*-windows-amd64.exe` | ok (Forgejo `ci-runner-windows-01` + Mirror) |
+| `*-windows-arm64.exe` | ok (Homelab `win-02` war offline; einmalig `windows-11-arm` Smoke, Asset nach Forgejo gespiegelt). Dauerhaft: Label `windows-arm64`. `.cargo/config.toml` hat `+crt-static` für `aarch64-pc-windows-msvc`. |
+| `*-macos-universal.zip` | ok |
+
+Reusable Windows-Jobs brauchen `workflow_call` im Publish-`if` und Secret-Name `GH_MIRROR_TOKEN` (Forgejo verbietet Prefix `GITHUB_`).

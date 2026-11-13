@@ -1,0 +1,91 @@
+name: Set up the Windows build
+description: >-
+  Stages a copy of gpui-pre-windows with the patches from
+  scripts/gpui-windows-patches and builds the onnxruntime.dll that ships
+  embedded in the app. Exports GPUI_PRE_WINDOWS_PATCHED and
+  CALLING_ONNXRUNTIME_DLL for the cargo steps that follow.
+runs:
+  using: composite
+  steps:
+    # ring / aws-lc-sys on Windows ARM64 need clang-cl (MSVC alone ignores .S asm).
+    # Prefer the VS Llvm ARM64 toolset; fall back to a Machine-PATH LLVM install.
+    - name: Prefer clang-cl on Windows ARM64
+      shell: bash
+      run: |
+        set -euo pipefail
+        is_arm=0
+        case "${PROCESSOR_ARCHITECTURE:-}" in ARM64) is_arm=1 ;; esac
+        case "${PROCESSOR_ARCHITEW6432:-}" in ARM64) is_arm=1 ;; esac
+        case "$(uname -m 2>/dev/null || true)" in aarch64|arm64) is_arm=1 ;; esac
+        case "${PROCESSOR_IDENTIFIER:-}" in *ARM*|*Qualcomm*) is_arm=1 ;; esac
+        if [[ "$is_arm" != 1 ]]; then
+          echo "Not Windows ARM64 — skip clang-cl wiring"
+          exit 0
+        fi
+        for d in \
+          "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/Llvm/ARM64/bin" \
+          "/c/Program Files/Microsoft Visual Studio/2022/BuildTools/VC/Tools/Llvm/ARM64/bin" \
+          "/c/Program Files/LLVM/bin"; do
+          if [[ -x "$d/clang-cl.exe" || -f "$d/clang-cl.exe" ]]; then
+            echo "$d" >> "$GITHUB_PATH"
+            export PATH="$d:$PATH"
+            echo "CC=clang-cl" >> "$GITHUB_ENV"
+            echo "CXX=clang-cl" >> "$GITHUB_ENV"
+            echo "Using clang-cl from $d"
+            "$d/clang-cl.exe" --version | head -n 2 || true
+            exit 0
+          fi
+        done
+        echo "clang-cl not found — Windows ARM64 build will fail for ring/aws-lc-sys" >&2
+        exit 1
+
+    # scripts/build-windows.sh stages a copy of gpui-pre-windows with the patches from
+    # scripts/gpui-windows-patches and points `patch.crates-io` at it. Same here, except the
+    # build.rs rewrite of that script is left out: it only exists so a Linux host can
+    # cross-compile, and it would hide fxc.exe from a native Windows build.
+    - name: Stage the patched gpui-pre-windows
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Host-Arch: amd64-Runner → x86_64, ARM64-Runner → aarch64.
+        # Git Bash on WoA often reports uname -m=x86_64 — prefer PROCESSOR_*.
+        filter_platform=x86_64-pc-windows-msvc
+        case "${PROCESSOR_ARCHITECTURE:-}${PROCESSOR_ARCHITEW6432:-}" in
+          *ARM64*) filter_platform=aarch64-pc-windows-msvc ;;
+        esac
+        case "$(uname -m 2>/dev/null || echo x86_64)" in
+          aarch64|arm64) filter_platform=aarch64-pc-windows-msvc ;;
+        esac
+        case "${PROCESSOR_IDENTIFIER:-}" in
+          *ARM*|*Qualcomm*) filter_platform=aarch64-pc-windows-msvc ;;
+        esac
+        echo "filter_platform=$filter_platform"
+        # Forgejo Windows runners often lack jq/python on PATH — use PowerShell.
+        meta_json="$(mktemp)"
+        cargo metadata --format-version 1 --filter-platform "$filter_platform" >"$meta_json"
+        manifestPath="$(
+          powershell.exe -NoProfile -Command \
+            "\$j = Get-Content -Raw '$(cygpath -w "$meta_json")' | ConvertFrom-Json; (\$j.packages | Where-Object { \$_.name -eq 'gpui-pre-windows' } | Select-Object -First 1).manifest_path"
+        )"
+        rm -f "$meta_json"
+        [[ -n "$manifestPath" ]] || { echo "gpui-pre-windows not found in cargo metadata" >&2; exit 1; }
+        # cygpath first, then dirname: avoid Windows backslashes being eaten by xargs.
+        sourceDir="$(dirname "$(cygpath -u "$manifestPath")")"
+        [ -f "$sourceDir/Cargo.toml" ] || { echo "not the gpui-pre-windows crate dir: $sourceDir" >&2; exit 1; }
+        patchedDir="$(cygpath -m "$RUNNER_TEMP")/gpui-pre-windows"
+        rm -rf "$patchedDir"
+        cp -r "$sourceDir" "$patchedDir"
+        chmod -R u+w "$patchedDir"
+        for patchFile in scripts/gpui-windows-patches/*.patch; do
+          git -C "$patchedDir" apply -p1 "$(cygpath -m "$GITHUB_WORKSPACE/$patchFile")"
+        done
+        echo "GPUI_PRE_WINDOWS_PATCHED=$patchedDir" >> "$GITHUB_ENV"
+
+    # Background effects ship as an embedded DLL, see tools/onnxruntime-dll.
+    # The path must be absolute: the calling build script reads it from crates/calling,
+    # and `cygpath -m` leaves a relative path like tools/onnxruntime-dll unchanged.
+    - name: Build the embedded onnxruntime.dll
+      shell: bash
+      run: |
+        (cd tools/onnxruntime-dll && RUSTFLAGS="-C target-feature=-crt-static" cargo build --release)
+        echo "CALLING_ONNXRUNTIME_DLL=$(cygpath -m "$GITHUB_WORKSPACE")/tools/onnxruntime-dll/target/release/onnxruntime.dll" >> "$GITHUB_ENV"
