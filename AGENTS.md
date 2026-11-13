@@ -9,6 +9,7 @@ Required workflow (Cursor rule `.cursor/rules/fork-workflow.mdc`, `alwaysApply`)
 - **`upstream`** (`danieldaeschle/rusty-teams`) = Upstream; fetch + thin targeted PRs only
 - Never push everyday commits to `upstream`
 - Upstream PRs: fresh branch from `upstream/main`, one topic slice
+- Open upstream PR heads must also exist on Forgejo (`origin`), or the Forgejo→GitHub push mirror deletes them and GitHub closes the PR (`head_ref_deleted`) — see `.cursor/rules/fork-workflow.mdc`
 - Releases: tags like `v0.3.0-joe.1` on Forgejo; GitHub gets the same assets via mirror (`GITHUB_RELEASE.md`)
 - Local install: `scripts/install-linux-local.sh --restart` only. A bare `cargo build` + copy lacks `TEAMS_GOOGLE_CLIENT_ID` (from `.env.google.local`) and drops every Google calendar.
 ## OpenSpec

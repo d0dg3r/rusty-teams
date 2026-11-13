@@ -23,7 +23,19 @@ Dieses Repo ist Joes Produktlinie. Remotes und Rollen:
 
 - Nur **kleine, thematische Scheiben**, abgezweigt vom aktuellen `upstream/main`.
 - Nicht den ganzen Fork-Stand (Agent-Providers, lokale Experimente, …) als einen PR schicken.
-- PR-Quelle: Branch auf `github` / Forgejo-Spiegel → Ziel `danieldaeschle/rusty-teams`.
+- PR-Quelle: Branch auf `github` (`d0dg3r/rusty-teams`) → Ziel `danieldaeschle/rusty-teams`.
+
+### Push-Mirror vs. Upstream-PR-Branches (Gesetz)
+
+Forgejo Push-Mirror nach `d0dg3r/rusty-teams` spiegelt **nur** Refs, die auf Forgejo existieren, und **löscht** auf GitHub Branches, die auf Forgejo fehlen. Folge: ein nur auf GitHub angelegter PR-Head (`pr/…`) verschwindet beim nächsten Forgejo→GitHub-Sync → GitHub schliesst den Upstream-PR mit `head_ref_deleted` (Actor oft `d0dg3r`, nicht Daniel).
+
+**Pflicht, solange ein Upstream-PR offen ist:**
+
+1. PR-Head parallel auf **Forgejo** halten (`git push origin HEAD:pr/…`), damit der Mirror ihn nicht löscht — **oder**
+2. nach jedem Forgejo-Push den fehlenden Head erneut nach `github` pushen und den PR ggf. `gh pr reopen`
+3. Nie annehmen, `git push github pr/…` allein überlebt den nächsten SoT-Push auf `origin`
+
+Alltags-Feature-Branches für die eigene Linie weiter nur auf `origin`; der Sonderfall gilt ausschliesslich für offene Upstream-PR-Heads auf dem Spiegel-Remote.
 
 ## Eigene Releases
 
@@ -36,5 +48,6 @@ Dieses Repo ist Joes Produktlinie. Remotes und Rollen:
 
 - Alltagskomits auf `upstream` pushen
 - Alltagskomits nur auf `github` pushen und Forgejo vergessen
+- Upstream-PR-Head nur auf `github` anlegen und danach Forgejo pushen, ohne den Head auch auf `origin` zu haben (Mirror löscht ihn → PR closed)
 - Riesen-PR mit vermischten Fork-Features an Daniel
 - Upstream-Tag-Namen für abweichenden Fork-Inhalt wiederverwenden
