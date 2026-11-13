@@ -7,9 +7,9 @@ use common::harness;
 use tokio::sync::mpsc::Receiver;
 
 const TEAMS: &str = "https://teams.cloud.microsoft/";
-const OUTLOOK: &str = "https://outlook.office.com/mail/";
+const FOREIGN: &str = "https://example.com/";
 const PARKED_TEAMS: &str = "https://teams.cloud.microsoft/robots.txt";
-const PARKED_OUTLOOK: &str = "https://outlook.cloud.microsoft/owa/favicon.ico";
+const FOREIGN_ICON: &str = "https://example.com/favicon.ico";
 const LOGIN: &str = "https://login.microsoftonline.com/common/oauth2/authorize?client_id=x";
 
 async fn next_event(events: &mut Receiver<BrowserEvent>) -> BrowserEvent {
@@ -43,7 +43,7 @@ async fn status_of_a_down_browser() {
 #[tokio::test]
 async fn status_of_a_running_browser_reads_mode_file_and_tabs() {
     let harness = harness().await;
-    harness.mock.start(&[TEAMS, OUTLOOK]).await;
+    harness.mock.start(&[TEAMS, FOREIGN]).await;
     std::fs::write(&harness.mode_file, "headless").unwrap();
     let status = harness.browser.status().await.unwrap();
     assert!(status.running);
@@ -63,20 +63,20 @@ async fn status_reports_login_required() {
 }
 
 #[tokio::test]
-async fn ensure_running_starts_headless_with_one_url_and_opens_the_second_tab() {
+async fn ensure_running_starts_headless_with_the_teams_tab_only() {
     let harness = harness().await;
     harness.browser.ensure_running().await.unwrap();
     let launches = harness.launcher.requests.lock().unwrap().clone();
     assert_eq!(launches.len(), 1);
     assert!(launches[0].headless);
     assert_eq!(launches[0].start_urls, [TEAMS]);
-    assert_eq!(harness.mock.urls(), [TEAMS, OUTLOOK]);
+    assert_eq!(harness.mock.urls(), [TEAMS]);
     assert_eq!(
         std::fs::read_to_string(&harness.mode_file).unwrap(),
         "headless"
     );
     assert!(
-        harness
+        !harness
             .mock
             .requests()
             .contains(&"PUT /json/new".to_owned())
@@ -86,10 +86,10 @@ async fn ensure_running_starts_headless_with_one_url_and_opens_the_second_tab() 
 #[tokio::test]
 async fn ensure_running_on_a_running_browser_opens_only_missing_tabs() {
     let harness = harness().await;
-    harness.mock.start(&[TEAMS]).await;
+    harness.mock.start(&[FOREIGN]).await;
     harness.browser.ensure_running().await.unwrap();
     assert!(harness.launcher.requests.lock().unwrap().is_empty());
-    assert_eq!(harness.mock.urls(), [TEAMS, OUTLOOK]);
+    assert_eq!(harness.mock.urls(), [FOREIGN, TEAMS]);
     harness.browser.ensure_tabs().await.unwrap();
     assert_eq!(harness.mock.urls().len(), 2);
 }
@@ -156,7 +156,7 @@ async fn login_window_without_teams_tab_opens_only_teams() {
 #[tokio::test]
 async fn watchdog_ignores_brief_login_redirect_within_grace() {
     let harness = harness().await;
-    harness.mock.start(&[TEAMS, OUTLOOK]).await;
+    harness.mock.start(&[TEAMS, FOREIGN]).await;
     let config = WatchdogConfig {
         login_grace: Duration::from_millis(250),
         ..fast_watchdog()
@@ -170,7 +170,7 @@ async fn watchdog_ignores_brief_login_redirect_within_grace() {
     // Brief silent SSO redirect clears before login_grace elapses.
     harness.mock.set_urls(&[TEAMS, LOGIN]);
     tokio::time::sleep(Duration::from_millis(120)).await;
-    harness.mock.set_urls(&[TEAMS, OUTLOOK]);
+    harness.mock.set_urls(&[TEAMS, FOREIGN]);
     tokio::time::sleep(Duration::from_millis(200)).await;
     assert!(watchdog.events.try_recv().is_err());
 
@@ -259,14 +259,14 @@ async fn watchdog_retries_with_backoff_until_launch_works() {
 #[tokio::test]
 async fn watchdog_announces_login_once_per_occurrence() {
     let harness = harness().await;
-    harness.mock.start(&[TEAMS, OUTLOOK]).await;
+    harness.mock.start(&[TEAMS, FOREIGN]).await;
     let mut watchdog = Watchdog::spawn(harness.browser.clone(), fast_watchdog());
     assert_eq!(
         next_event(&mut watchdog.events).await,
         BrowserEvent::Started
     );
 
-    harness.mock.set_urls(&[LOGIN, OUTLOOK]);
+    harness.mock.set_urls(&[LOGIN, FOREIGN]);
     assert_eq!(
         next_event(&mut watchdog.events).await,
         BrowserEvent::LoginRequired
@@ -274,7 +274,7 @@ async fn watchdog_announces_login_once_per_occurrence() {
     tokio::time::sleep(Duration::from_millis(300)).await;
     assert!(watchdog.events.try_recv().is_err());
 
-    harness.mock.set_urls(&[TEAMS, OUTLOOK]);
+    harness.mock.set_urls(&[TEAMS, FOREIGN]);
     tokio::time::sleep(Duration::from_millis(200)).await;
     harness.mock.set_urls(&[LOGIN]);
     assert_eq!(
@@ -329,7 +329,7 @@ async fn watchdog_ignores_the_gap_during_a_login_window_restart() {
 #[tokio::test]
 async fn parked_tabs_are_the_app_tab_not_missing_and_not_login() {
     let harness = harness().await;
-    harness.mock.start(&[PARKED_TEAMS, PARKED_OUTLOOK]).await;
+    harness.mock.start(&[PARKED_TEAMS]).await;
     let status = harness.browser.status().await.unwrap();
     assert!(
         status
@@ -339,33 +339,36 @@ async fn parked_tabs_are_the_app_tab_not_missing_and_not_login() {
     );
     assert_eq!(status.login_state, LoginState::NotRequired);
     harness.browser.ensure_running().await.unwrap();
-    assert_eq!(harness.mock.urls(), [PARKED_TEAMS, PARKED_OUTLOOK]);
+    assert_eq!(harness.mock.urls(), [PARKED_TEAMS]);
 }
 
 #[tokio::test]
 async fn wake_navigates_the_parked_app_tab_to_its_start_url() {
     let harness = harness().await;
-    harness.mock.start(&[PARKED_TEAMS, PARKED_OUTLOOK]).await;
+    harness.mock.start(&[PARKED_TEAMS, FOREIGN_ICON]).await;
     harness.browser.wake(App::Teams).await.unwrap();
-    assert_eq!(harness.mock.urls(), [TEAMS, PARKED_OUTLOOK]);
+    assert_eq!(harness.mock.urls(), [TEAMS, FOREIGN_ICON]);
     assert!(
         harness
             .mock
             .requests()
             .contains(&"CDP Page.navigate".to_owned())
     );
-    harness.browser.wake(App::Outlook).await.unwrap();
-    assert_eq!(harness.mock.urls(), [TEAMS, OUTLOOK]);
     let status = harness.browser.status().await.unwrap();
-    assert!(status.tabs.iter().all(|tab| !tab.parked));
+    assert!(
+        status
+            .tabs
+            .iter()
+            .all(|tab| tab.app.is_none() || !tab.parked)
+    );
 }
 
 #[tokio::test]
 async fn wake_opens_the_tab_when_the_app_has_none() {
     let harness = harness().await;
-    harness.mock.start(&[TEAMS]).await;
-    harness.browser.wake(App::Outlook).await.unwrap();
-    assert_eq!(harness.mock.urls(), [TEAMS, OUTLOOK]);
+    harness.mock.start(&[FOREIGN]).await;
+    harness.browser.wake(App::Teams).await.unwrap();
+    assert_eq!(harness.mock.urls(), [FOREIGN, TEAMS]);
 }
 
 #[tokio::test]
@@ -375,29 +378,29 @@ async fn jittered_recheck_adopts_a_chrome_another_launcher_started() {
     let browser = harness.browser.clone();
     let ensure = tokio::spawn(async move { browser.ensure_running().await });
     tokio::time::sleep(Duration::from_millis(2)).await;
-    mock.start(&[TEAMS, OUTLOOK]).await;
+    mock.start(&[TEAMS]).await;
     ensure.await.unwrap().unwrap();
     assert!(harness.launcher.requests.lock().unwrap().is_empty());
-    assert_eq!(harness.mock.urls(), [TEAMS, OUTLOOK]);
+    assert_eq!(harness.mock.urls(), [TEAMS]);
 }
 
 #[tokio::test]
 async fn a_foreign_chrome_taking_the_port_during_launch_is_adopted_and_deduped() {
     let harness = harness().await;
     harness.mock.set_attached(&["P0"]);
-    *harness.launcher.foreign.lock().unwrap() = Some(vec![TEAMS, TEAMS, OUTLOOK]);
+    *harness.launcher.foreign.lock().unwrap() = Some(vec![TEAMS, TEAMS, FOREIGN]);
     harness.browser.ensure_running().await.unwrap();
     assert_eq!(harness.mock.tab_ids(), ["P0", "P2"]);
-    assert_eq!(harness.mock.urls(), [TEAMS, OUTLOOK]);
+    assert_eq!(harness.mock.urls(), [TEAMS, FOREIGN]);
 }
 
 #[tokio::test]
 async fn dedupe_closes_unattached_duplicates_after_a_launch() {
     let harness = harness().await;
-    *harness.launcher.foreign.lock().unwrap() = Some(vec![TEAMS, TEAMS, OUTLOOK, OUTLOOK]);
+    *harness.launcher.foreign.lock().unwrap() = Some(vec![TEAMS, TEAMS, PARKED_TEAMS]);
     harness.mock.set_attached(&["P1"]);
     harness.browser.ensure_running().await.unwrap();
-    assert_eq!(harness.mock.tab_ids(), ["P1", "P2"]);
+    assert_eq!(harness.mock.tab_ids(), ["P1"]);
 }
 
 #[tokio::test]
@@ -405,7 +408,7 @@ async fn dedupe_never_closes_login_or_foreign_tabs() {
     let harness = harness().await;
     *harness.launcher.foreign.lock().unwrap() = Some(vec![TEAMS, LOGIN, "about:blank"]);
     harness.browser.ensure_running().await.unwrap();
-    assert_eq!(harness.mock.urls(), [TEAMS, LOGIN, "about:blank", OUTLOOK]);
+    assert_eq!(harness.mock.urls(), [TEAMS, LOGIN, "about:blank"]);
 }
 
 #[tokio::test]
@@ -424,7 +427,7 @@ async fn watchdog_waits_after_died_and_adopts_a_chrome_that_came_up_meanwhile() 
 
     harness.mock.kill().await;
     assert_eq!(next_event(&mut watchdog.events).await, BrowserEvent::Died);
-    harness.mock.start(&[TEAMS, OUTLOOK]).await;
+    harness.mock.start(&[TEAMS, FOREIGN]).await;
     assert_eq!(
         next_event(&mut watchdog.events).await,
         BrowserEvent::Restarted
@@ -435,9 +438,9 @@ async fn watchdog_waits_after_died_and_adopts_a_chrome_that_came_up_meanwhile() 
 #[tokio::test]
 async fn probe_reports_ok_hung_and_no_tab() {
     let harness = harness().await;
-    harness.mock.start(&[OUTLOOK]).await;
+    harness.mock.start(&[FOREIGN]).await;
     assert_eq!(harness.browser.probe_renderer().await, RendererState::NoTab);
-    harness.mock.set_urls(&[TEAMS, OUTLOOK]);
+    harness.mock.set_urls(&[TEAMS, FOREIGN]);
     assert_eq!(harness.browser.probe_renderer().await, RendererState::Ok);
     harness.mock.stop_answering(false);
     assert_eq!(harness.browser.probe_renderer().await, RendererState::Hung);
