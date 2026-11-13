@@ -70,4 +70,17 @@ mod tests {
             "Teams-Besprechungslink wird hinzugefügt"
         );
     }
+
+    #[test]
+    fn ui_locale_settings_calendar_connect_keys() {
+        let _guard = locale_test_lock();
+        apply_locale("en");
+        assert_eq!(tr("settings.calendar.connect_button"), "Connect Google");
+        apply_locale("de");
+        assert_eq!(tr("settings.calendar.connect_button"), "Google verbinden");
+        assert_eq!(
+            tr("settings.calendar.not_in_build"),
+            "Google Kalender ist in diesem Build nicht enthalten."
+        );
+    }
 }

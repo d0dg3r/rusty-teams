@@ -20,12 +20,24 @@ jobs:
       LC_ALL: en_US.UTF-8
       NODE_OPTIONS: --dns-result-order=ipv4first
       CARGO_TERM_COLOR: always
+      # Baked into chatsvc via option_env! (Dock Connect Google).
+      TEAMS_GOOGLE_CLIENT_ID: ${{ secrets.TEAMS_GOOGLE_CLIENT_ID }}
+      TEAMS_GOOGLE_CLIENT_SECRET: ${{ secrets.TEAMS_GOOGLE_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: ./.forgejo/actions/setup-rust
         with:
           targets: aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Require Google client on v* tags
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          if [ -z "${TEAMS_GOOGLE_CLIENT_ID:-}" ]; then
+            echo "TEAMS_GOOGLE_CLIENT_ID secret is required for v* release builds." >&2
+            exit 1
+          fi
 
       - name: Build universal .app zip
         run: scripts/build-macos.sh crates/app teams

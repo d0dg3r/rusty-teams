@@ -161,5 +161,5 @@ async fn ensure_access_token(
 }
 
 fn missing_client_id() -> String {
-    "Set TEAMS_GOOGLE_CLIENT_ID to connect Google Calendar".into()
+    app_base::ui_locale::tr("settings.calendar.not_in_build")
 }

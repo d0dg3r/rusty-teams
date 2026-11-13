@@ -1,24 +1,27 @@
+use gpui_kit::ClipboardItem;
 use gpui_kit::component::v_flex;
 use gpui_kit::*;
 use store::{CalendarProvider, CalendarRef};
 
 use super::rows::{caption, control_row, text_button, toggle_row};
 use crate::app_state::AppState;
+use crate::i18n::tr;
 use crate::theme;
 
 pub fn render(app: &Entity<AppState>, cx: &App) -> Div {
     let accounts = app.read(cx).calendar_accounts();
+    let pending = app.read(cx).google_connect_pending().is_some();
     let mut body = v_flex()
         .w_full()
-        .child(caption("GOOGLE"))
-        .child(connect_row(app, accounts.has_google()));
+        .child(caption(tr("settings.calendar.section_google")))
+        .child(connect_row(app, accounts.has_google(), pending));
     for account in &accounts.google_accounts {
         body = body.child(account_block(app, account, &accounts));
     }
     body = body
-        .child(caption("HOME CALENDAR"))
+        .child(caption(tr("settings.calendar.section_home")))
         .child(home_choices(app, &accounts))
-        .child(caption("ALSO WRITE TO"));
+        .child(caption(tr("settings.calendar.section_write")));
     if accounts.home.provider != CalendarProvider::Outlook {
         let write_app = app.clone();
         let target = CalendarRef::outlook();
@@ -29,8 +32,8 @@ pub fn render(app: &Entity<AppState>, cx: &App) -> Div {
         body = body.child(
             toggle_row(
                 "settings-write-outlook",
-                "Outlook (Microsoft mailbox)",
-                "Dual-write when home is Google",
+                tr("settings.calendar.outlook_mailbox"),
+                tr("settings.calendar.dual_write_when_google_home"),
                 theme::text_muted(),
                 selected,
             )
@@ -42,28 +45,70 @@ pub fn render(app: &Entity<AppState>, cx: &App) -> Div {
         );
     } else if accounts.google_accounts.is_empty() {
         body = body.child(control_row(
-            "No extra write targets",
-            "Connect Google, then enable dual-write on a calendar above.",
+            tr("settings.calendar.no_extra_targets"),
+            tr("settings.calendar.connect_then_dual_write"),
             div(),
         ));
     }
     body
 }
 
-fn connect_row(app: &Entity<AppState>, connected: bool) -> Div {
+fn connect_row(app: &Entity<AppState>, connected: bool, pending: bool) -> Div {
     let app = app.clone();
     if connected {
         control_row(
-            "Google Calendar",
-            "Connected accounts appear below. Disconnect removes tokens from this device.",
+            tr("settings.calendar.google_title"),
+            tr("settings.calendar.connected_detail"),
             div(),
         )
-    } else {
+    } else if pending {
+        let reopen = app.clone();
+        let copy = app.clone();
+        let cancel = app.clone();
         control_row(
-            "Google Calendar",
-            "Requires TEAMS_GOOGLE_CLIENT_ID. Opens a browser for sign-in.",
-            text_button("settings-google-connect", "Connect Google").on_click(move |_, _, cx| {
-                app.update(cx, |state, cx| state.connect_google_calendar(cx))
+            tr("settings.calendar.google_title"),
+            tr("settings.calendar.finish_in_browser"),
+            div()
+                .flex()
+                .gap_2()
+                .child(
+                    text_button(
+                        "settings-google-reopen",
+                        tr("settings.calendar.open_browser_again"),
+                    )
+                    .on_click(move |_, _, cx| {
+                        reopen.update(cx, |state, cx| state.reopen_google_connect(cx))
+                    }),
+                )
+                .child(
+                    text_button("settings-google-copy", tr("settings.calendar.copy_link")).on_click(
+                        move |_, _, cx| {
+                            if let Some(url) = copy.read(cx).google_connect_pending().map(str::to_owned)
+                            {
+                                cx.write_to_clipboard(ClipboardItem::new_string(url));
+                            }
+                        },
+                    ),
+                )
+                .child(
+                    text_button("settings-google-cancel", tr("common.cancel")).on_click(
+                        move |_, _, cx| {
+                            cancel.update(cx, |state, cx| state.cancel_google_connect(cx))
+                        },
+                    ),
+                ),
+        )
+    } else {
+        let connect = app.clone();
+        control_row(
+            tr("settings.calendar.google_title"),
+            tr("settings.calendar.connect_hint"),
+            text_button(
+                "settings-google-connect",
+                tr("settings.calendar.connect_button"),
+            )
+            .on_click(move |_, _, cx| {
+                connect.update(cx, |state, cx| state.connect_google_calendar(cx))
             }),
         )
     }
@@ -78,10 +123,10 @@ fn account_block(
     let account_id = account.id.clone();
     let mut block = v_flex().w_full().child(control_row(
         account.email.clone(),
-        "Google account",
+        tr("settings.calendar.google_account"),
         text_button(
             format!("settings-google-disconnect-{}", account.id),
-            "Disconnect",
+            tr("settings.calendar.disconnect"),
         )
         .on_click(move |_, _, cx| {
             disconnect_app.update(cx, |state, cx| {
@@ -104,9 +149,9 @@ fn account_block(
                 format!("settings-google-cal-{}", calendar.id),
                 calendar.summary.clone(),
                 if calendar.primary {
-                    "Primary calendar"
+                    tr("settings.calendar.primary")
                 } else {
-                    "Show in calendar grid"
+                    tr("settings.calendar.show_in_grid")
                 },
                 theme::text_muted(),
                 calendar.selected,
@@ -123,7 +168,7 @@ fn account_block(
             block = block.child(
                 toggle_row(
                     format!("settings-google-write-{}", calendar.id),
-                    format!("Also write new meetings to {}", calendar.summary),
+                    tr_args_write(&calendar.summary),
                     "",
                     theme::text_muted(),
                     is_write,
@@ -139,6 +184,12 @@ fn account_block(
     block
 }
 
+fn tr_args_write(summary: &str) -> String {
+    let mut args = std::collections::HashMap::new();
+    args.insert("name".to_owned(), summary.to_owned());
+    crate::i18n::tr_args("settings.calendar.also_write_to", &args)
+}
+
 fn home_choices(app: &Entity<AppState>, accounts: &store::CalendarAccounts) -> Div {
     let mut choices = v_flex().w_full();
     let outlook_app = app.clone();
@@ -146,8 +197,8 @@ fn home_choices(app: &Entity<AppState>, accounts: &store::CalendarAccounts) -> D
     choices = choices.child(
         toggle_row(
             "settings-home-outlook",
-            "Outlook (Microsoft mailbox)",
-            "Default when no Google home is chosen",
+            tr("settings.calendar.outlook_mailbox"),
+            tr("settings.calendar.outlook_home_detail"),
             theme::text_muted(),
             outlook_home,
         )
@@ -165,7 +216,7 @@ fn home_choices(app: &Entity<AppState>, accounts: &store::CalendarAccounts) -> D
             choices = choices.child(
                 toggle_row(
                     format!("settings-home-google-{}", calendar.id),
-                    format!("Google · {}", calendar.summary),
+                    format!("{} · {}", tr("settings.calendar.google_label"), calendar.summary),
                     account.email.clone(),
                     theme::text_muted(),
                     selected,

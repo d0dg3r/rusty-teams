@@ -20,12 +20,25 @@ jobs:
       GIT_SSL_NO_VERIFY: "true"
       NODE_OPTIONS: --dns-result-order=ipv4first
       CARGO_TERM_COLOR: always
+      # Baked into chatsvc via option_env! (Start Menu Connect Google).
+      TEAMS_GOOGLE_CLIENT_ID: ${{ secrets.TEAMS_GOOGLE_CLIENT_ID }}
+      TEAMS_GOOGLE_CLIENT_SECRET: ${{ secrets.TEAMS_GOOGLE_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: ./.forgejo/actions/setup-rust
 
       - uses: ./.forgejo/actions/setup-windows
+
+      - name: Require Google client on v* tags
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${TEAMS_GOOGLE_CLIENT_ID:-}" ]; then
+            echo "TEAMS_GOOGLE_CLIENT_ID secret is required for v* release builds." >&2
+            exit 1
+          fi
 
       - name: Build
         shell: bash
