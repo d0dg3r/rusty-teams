@@ -99,4 +99,16 @@ mod tests {
             "Google Kalender ist in diesem Build nicht enthalten."
         );
     }
+
+    #[test]
+    fn ui_locale_auth_splash_keys() {
+        let _guard = locale_test_lock();
+        apply_locale("en");
+        assert_eq!(
+            tr("auth.splash.opening_browser"),
+            "Opening the browser for sign-in…"
+        );
+        apply_locale("de");
+        assert!(tr("auth.splash.awaiting_browser").contains("Browser"));
+    }
 }

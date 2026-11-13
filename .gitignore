@@ -1,9 +1,11 @@
 target/
 .claude/
-# Local research/ADRs under docs/; track design SoT for GUARDRAILS Look.
+# Local research under docs/; track design SoT and ADRs.
 docs/*
 !docs/design/
 !docs/design/**
+!docs/decisions/
+!docs/decisions/**
 dist/
 
 # Local Google OAuth for Connect (never commit)

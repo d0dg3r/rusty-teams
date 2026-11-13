@@ -88,15 +88,28 @@ pub(crate) fn major_from_version_output(output: &str) -> Option<u32> {
 
 const FALLBACK_MAJOR: u32 = 150;
 
-/// Env the app sets for GPUI emoji font filtering. Chrome must use the system
-/// fontconfig again — the GPUI file is dirs-only and breaks Segoe/Arial fallback
-/// (Orbitron, Font Awesome, … on the Microsoft login page).
-const APP_ONLY_FONTCONFIG_VARS: &[&str] = &["FONTCONFIG_FILE", "FONTCONFIG_PATH"];
+/// Marker directory used by `app_base::linux_fonts::hide_system_color_emoji`.
+/// Only that app-generated conf must be cleared for Chrome; a user-provided
+/// `FONTCONFIG_FILE` / `FONTCONFIG_PATH` stays inherited.
+const APP_EMOJI_FONTCONFIG_MARKER: &str = "fontconfig-emoji";
+
+fn is_app_emoji_fontconfig(value: &std::ffi::OsStr) -> bool {
+    std::path::Path::new(value)
+        .components()
+        .any(|component| component.as_os_str() == APP_EMOJI_FONTCONFIG_MARKER)
+}
 
 fn strip_app_fontconfig(command: &mut Command) {
-    for key in APP_ONLY_FONTCONFIG_VARS {
-        command.env_remove(*key);
+    for key in app_fontconfig_keys(|key| std::env::var_os(key)) {
+        command.env_remove(key);
     }
+}
+
+fn app_fontconfig_keys(lookup: impl Fn(&str) -> Option<std::ffi::OsString>) -> Vec<&'static str> {
+    ["FONTCONFIG_FILE", "FONTCONFIG_PATH"]
+        .into_iter()
+        .filter(|key| lookup(key).is_some_and(|value| is_app_emoji_fontconfig(&value)))
+        .collect()
 }
 
 fn chrome_major(platform: Platform, executable: &Path) -> u32 {
@@ -104,13 +117,9 @@ fn chrome_major(platform: Platform, executable: &Path) -> u32 {
         Platform::Linux | Platform::Macos => {
             let mut command = Command::new(executable);
             strip_app_fontconfig(&mut command);
-            command
-                .arg("--version")
-                .output()
-                .ok()
-                .and_then(|output| {
-                    major_from_version_output(&String::from_utf8_lossy(&output.stdout))
-                })
+            command.arg("--version").output().ok().and_then(|output| {
+                major_from_version_output(&String::from_utf8_lossy(&output.stdout))
+            })
         }
         Platform::Windows | Platform::Wsl => executable
             .parent()
@@ -275,14 +284,13 @@ mod tests {
     }
 
     #[test]
-    fn chrome_drops_gpui_fontconfig_env() {
-        assert!(APP_ONLY_FONTCONFIG_VARS.contains(&"FONTCONFIG_FILE"));
-        assert!(APP_ONLY_FONTCONFIG_VARS.contains(&"FONTCONFIG_PATH"));
-        let mut command = Command::new("true");
-        command.env("FONTCONFIG_FILE", "/tmp/gpui-fonts.conf");
-        command.env("FONTCONFIG_PATH", "/tmp/gpui-fontconfig");
-        strip_app_fontconfig(&mut command);
-        // env_remove is applied; child would not see the GPUI-only vars.
-        let _ = command;
+    fn chrome_drops_only_app_emoji_fontconfig() {
+        let keys = app_fontconfig_keys(|key| match key {
+            "FONTCONFIG_FILE" => Some("/tmp/cache/fontconfig-emoji/fonts.conf".into()),
+            "FONTCONFIG_PATH" => Some("/etc/fonts".into()),
+            _ => None,
+        });
+        assert_eq!(keys, vec!["FONTCONFIG_FILE"]);
+        assert!(app_fontconfig_keys(|_| None).is_empty());
     }
 }
