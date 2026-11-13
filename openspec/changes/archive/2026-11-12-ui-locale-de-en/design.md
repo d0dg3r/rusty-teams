@@ -2,86 +2,86 @@
 
 ## Context
 
-Siehe `proposal.md` für den Anlass. Die App-UI in `crates/app` (Views, Settings, Notify/Tray) und Nutzerhinweise in `crates/calling` (u. a. `CallUpdate::Notice` mit englischen Literalen) sind hardcodiert Englisch. Message-Translation und Caption-Sprachen existieren separat und bleiben unberührt.
+See `proposal.md` for motivation. App UI in `crates/app` (views, settings, notify/tray) and user notices in `crates/calling` (e.g. `CallUpdate::Notice` with English literals) are hardcoded English. Message translation and caption languages exist separately and stay untouched.
 
-`vendor/gpui-component` nutzt bereits `rust_i18n` (`locales/ui.yml`, `set_locale` / `locale` in `vendor/gpui-component/src/lib.rs`). Appearance-Persistenz liegt in `crates/app-base/src/appearance.rs` (Store-Meta). Notification-Settings analog in `crates/app-state/src/notify/settings.rs`.
+`vendor/gpui-component` already uses `rust_i18n` (`locales/ui.yml`, `set_locale` / `locale` in `vendor/gpui-component/src/lib.rs`). Appearance persistence lives in `crates/app-base/src/appearance.rs` (store meta). Notification settings similarly in `crates/app-state/src/notify/settings.rs`.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- App-eigener Locale-Katalog `en` + `de` (Deutschland-Orthografie im Produktkatalog) mit Fallback `en`.
-- Ableitung erster Start aus OS-Locale (`de*` → `de`, sonst `en`), Override persistiert, Live-Umschalten über Laufzeit-Lookup.
-- Stabile Hinweis-IDs aus Calling/App-State; Anzeigetext erst an der UI-Grenze.
-- Phasenweise Abdeckung bis Endzustand C (volle produktseitige UI), ohne halb leere Labels dank Fallback.
+- App-owned locale catalog `en` + `de` (Germany orthography in product catalog) with fallback `en`.
+- Derive first start from OS locale (`de*` → `de`, else `en`), persisted override, live switch via runtime lookup.
+- Stable notice IDs from calling/app-state; display text only at the UI boundary.
+- Phased coverage to end state C (full product UI), no half-empty labels thanks to fallback.
 
 **Non-Goals:**
 
-- `de-CH`-Katalog, weitere Sprachen in diesem Change.
-- Server-Content, Wire-Protokoll, Captions spoken language, Message-Translation.
-- Upstream-Riesen-PR; Lieferung auf Forgejo-`origin`. Vendor-Locale-YAML der Komponenten-Bibliothek nicht mit App-Strings mischen.
+- `de-CH` catalog, more languages in this change.
+- Server content, wire protocol, captions spoken language, message translation.
+- Giant upstream PR; delivery on Forgejo `origin`. Do not mix vendor component locale YAML with app strings.
 
 ## Decisions
 
-### `rust-i18n` für die App, eigener Katalog
+### `rust-i18n` for the app, own catalog
 
-Dieselbe Bibliothek wie `gpui-component`, eigener Katalog (z. B. unter `crates/app` oder kleinem Locale-Modul), Fallback `en`. Beim Start und bei Preference-Änderung: App-Locale setzen und `gpui_kit`/`gpui-component` `set_locale` mitziehen, damit Widget-Strings (DatePicker, Dialog-Defaults) nicht Englisch bleiben während die App Deutsch zeigt.
+Same library as `gpui-component`, own catalog (e.g. under `crates/app` or small locale module), fallback `en`. On start and preference change: set app locale and sync `gpui_kit`/`gpui-component` `set_locale` so widget strings (DatePicker, dialog defaults) do not stay English while the app shows German.
 
-Alternative verworfen: Mozilla Fluent / gettext — zusätzlicher Stack ohne Nutzen, solange der Vendor schon `rust-i18n` hat.
+Rejected alternative: Mozilla Fluent / gettext — extra stack without benefit while vendor already has `rust-i18n`.
 
-### Preference: Auto vs fest
+### Preference: auto vs fixed
 
-Gespeicherter Wert: `auto` | `en` | `de`. Default ohne Meta-Eintrag = `auto` (entspricht Spec «keine gespeicherte Einstellung»). Persistenz analog Appearance (Store-Meta). UI-Einstellung unter Appearance oder General; Anzeige der effektiven Sprache bei `auto` klar kennzeichnen.
+Stored value: `auto` | `en` | `de`. Default without meta entry = `auto` (matches spec «no saved setting»). Persistence like appearance (store meta). UI setting under Appearance or General; show effective language clearly when `auto`.
 
-Effektive Locale:
+Effective locale:
 
 ```
-meta fehlt / auto --> OS beginnt mit "de"? --> de : en
-meta en|de       --> genau dieser Wert
+meta missing / auto --> OS starts with "de"? --> de : en
+meta en|de       --> that exact value
 ```
 
-OS-Locale: Plattform-übliche Abfrage (Linux `LANG`/`LC_ALL`/`LC_MESSAGES`, Windows/macOS über vorhandene System-APIs im Repo bzw. schlanke Ergänzung). Nur Prefix `de` zählt; `de_CH`, `de_DE`, `de-AT` → Deutsch (Produkttexte dennoch Deutschland-Orthografie).
+OS locale: platform-typical query (Linux `LANG`/`LC_ALL`/`LC_MESSAGES`, Windows/macOS via existing system APIs in repo or slim addition). Only prefix `de` counts; `de_CH`, `de_DE`, `de-AT` → German (product text still Germany orthography).
 
-### Strings beim Render, nicht als `'static` Bootstrap
+### Strings at render time, not `'static` bootstrap
 
-Sichtbare Labels über Lookup zur Render-Zeit (`t!` oder Wrapper), damit Locale-Wechsel ohne Neustart wirkt. Const-`&'static str` die einmal bei Init gebacken werden, nur wo unvermeidbar und dann nach Locale-Wechsel invalidieren/neu binden (Tray-Menü neu syncen).
+Visible labels via lookup at render time (`t!` or wrapper) so locale change works without restart. Const `&'static str` baked once at init only where unavoidable, then invalidate/rebind after locale change (resync tray menu).
 
-### Call-Notices: IDs statt englischer Sätze
+### Call notices: IDs instead of English sentences
 
-`CallUpdate::Notice(String)` trägt heute fertigen Englisch-Text. Für Lokalisierung:
+`CallUpdate::Notice(String)` today carries finished English text. For localization:
 
 ```
 calling / app-state                 UI (crates/app)
 ------------------                  ---------------
-NoticeId + optionale Args    -->    t!("call.notice....", args)
-format!("Camera...: {error}") -->   Key + error als Arg (error intern Englisch ok)
+NoticeId + optional args     -->    t!("call.notice....", args)
+format!("Camera...: {error}") -->   key + error as arg (error may stay English internally)
 ```
 
-Stabile IDs für bekannte Notices (`ShareRefused`, `OnHold`, …). Dynamische Fehler: Template-Key + Argument. Tests in `calling` prüfen IDs/Enums, nicht übersetzte Sätze. UI-Tests können Locale setzen und DE/EN-Text asserten.
+Stable IDs for known notices (`ShareRefused`, `OnHold`, …). Dynamic errors: template key + argument. Tests in `calling` check IDs/enums, not translated sentences. UI tests can set locale and assert DE/EN text.
 
-Alternative verworfen: `t!` direkt in `calling` — zieht Locale-Katalog in ein Nicht-UI-Crate und koppelt Unit-Tests an Übersetzungen.
+Rejected alternative: `t!` directly in `calling` — pulls locale catalog into a non-UI crate and couples unit tests to translations.
 
-### Lieferphasen (ein Change, Endzustand C)
+### Delivery phases (one change, end state C)
 
-1. Gerüst: Katalog, Preference, OS-Default, Settings-Steuerung, `set_locale`, Fallback.
-2. Chrome: Rail, Settings-Nav/Texte, häufige Dialoge (Cancel/Save/…).
-3. Kernflächen: Chat, Calls, Calendar, Composer, Shortcuts-Beschriftungen.
-4. Notices/Tray/Agents/Fenster-Titel/Rest-Fehlertexte; Calling auf Notice-IDs.
+1. Scaffold: catalog, preference, OS default, settings control, `set_locale`, fallback.
+2. Chrome: rail, settings nav/text, common dialogs (Cancel/Save/…).
+3. Core surfaces: chat, calls, calendar, composer, shortcut labels.
+4. Notices/tray/agents/window titles/remaining error text; calling on notice IDs.
 
-Jede Phase darf mit Fallback `en` shippen; Spec «gesamte UI» ist erfüllt, wenn Phase 4 fertig und Verify grün ist.
+Each phase may ship with fallback `en`; spec «full UI» is met when phase 4 is done and verify is green.
 
-### OpenSpec vs Produktorthografie
+### OpenSpec vs product orthography
 
-OpenSpec-Artefakte und Agent-Texte: Schweizer Schreibweise (kein Eszett). Produktkatalog `de`: Deutschland-Deutsch inklusive Eszett. Kein Widerspruch — unterschiedliche Textsorten.
+OpenSpec artifacts and agent text: Swiss spelling (no eszett). Product catalog `de`: Germany German including eszett. No contradiction — different text kinds.
 
 ## Risks / Trade-offs
 
-- [Riesen-Diff / Layout-Tests mit englischen Strings] → Phasen; Tests locale setzen oder auf Keys/Rollen prüfen; `layout_guard` und sichtbare String-Asserts gezielt anpassen.
-- [Tray/OS-Menüs cachen Labels] → nach Locale-Wechsel `sync_tray` und vergleichbare Rebuilds.
-- [Längere DE-Strings sprengen Layout] → kritische Buttons in DE prüfen; wo nötig kürzere Formulierungen, nicht Schrift skalieren.
-- [Notice-ID-Migration lässt Rest-Literale] → Inventar der `CallUpdate::Notice`-Pfade; CI oder Test «keine neuen englischen Notice-Literale» optional später.
-- [gpui-component ohne `de` in `locales/ui.yml`] → fehlende Widget-Keys fallen auf `en`; bei Bedarf `de`-Zeilen im Vendor nachziehen oder akzeptieren bis Folge-Change.
+- [Huge diff / layout tests with English strings] → phases; tests set locale or assert keys/roles; adjust `layout_guard` and visible string asserts selectively.
+- [Tray/OS menus cache labels] → after locale change `sync_tray` and similar rebuilds.
+- [Longer DE strings break layout] → check critical buttons in DE; shorter wording where needed, do not scale font.
+- [Notice-ID migration leaves literal remnants] → inventory `CallUpdate::Notice` paths; CI or test «no new English notice literals» optional later.
+- [gpui-component without `de` in `locales/ui.yml`] → missing widget keys fall back to `en`; add vendor `de` lines or accept until follow-up.
 
 ## Migration Plan
 
-Kein Server-State. Bestehende Installationen ohne Meta-Key verhalten sich wie `auto` (OS). Rollback: Preference entfernen / auf `en` setzen; Code-Revert auf dem Fork-Branch. Lieferung nur nach Forgejo-`origin`.
+No server state. Existing installs without meta key behave like `auto` (OS). Rollback: remove preference / set `en`; code revert on fork branch. Delivery only after Forgejo `origin`.

@@ -2,32 +2,32 @@
 
 ## Why
 
-«Write with» kann Microsoft Copilot schon durch ein Chat-Profil ersetzen, aber Composer und Chat-Insel bleiben optisch und textlich «Copilot». Wer kein MS-Abo nutzt, sieht weiter Copilot-Branding und die Insel spricht weiterhin nur die Teams-API.
+«Write with» can already replace Microsoft Copilot with a chat profile, but the composer and chat island still look and read like «Copilot». Users without an MS subscription still see Copilot branding and the island still speaks only through the Teams API.
 
 ## What Changes
 
-- Wenn «Write with» ein Chat-Profil ist, zeigen Composer-Rewrite und die Chat-Header-Insel die Identität dieses Profils (Name + Non-Copilot-Icon), nicht «Copilot».
-- Die Chat-Insel beantwortet Fragen dann über dasselbe Chat-Profil; Kontext sind die letzten ~20 Nachrichten des offenen Chats als Text (kein MCP/Tools).
-- Composer-Status- und Fehlertexte folgen derselben Identität.
-- Mit lokalem Writer bleiben Rewrite und Insel auch ohne Teams-Engine / ohne Copilot-Lizenz erreichbar.
-- Leer belassenes «Write with» behält den Microsoft-Pfad inkl. Copilot-Branding (wie heute).
+- When «Write with» is a chat profile, composer rewrite and the chat header island show that profile’s identity (name + non-Copilot icon), not «Copilot».
+- The chat island then answers questions through the same chat profile; context is the latest ~20 messages of the open chat as plain text (no MCP/tools).
+- Composer status and error strings follow the same identity.
+- With a local writer, rewrite and the island stay available without a Teams engine / without a Copilot licence.
+- Leaving «Write with» empty keeps the Microsoft path including Copilot branding (as today).
 
-Annahme (Explorations-Feinheit): sichtbarer Anzeigename ist der **Profilname** aus den Agents-Einstellungen, nicht der Backend-Modellstring.
+Assumption (exploration detail): visible display name is the **profile name** from agent settings, not the backend model string.
 
 ## Capabilities
 
 ### New Capabilities
 
-- (keine)
+- (none)
 
 ### Modified Capabilities
 
-- `agent-providers`: «Write with» steuert nicht nur den Rewrite-Backend-Pfad, sondern die gemeinsame Assistenten-Identität und den Ask-Pfad der Chat-Insel.
+- `agent-providers`: «Write with» controls not only the rewrite backend path but shared assistant identity and the chat island ask path.
 
 ## Impact
 
-- UI: `crates/app/src/views/composer/rewrite.rs`, `crates/app/src/views/conversation/copilot.rs`, Overflow-Menü in `chat_header_actions.rs`
-- Settings-Texte optional: `settings_section.rs` (Hinweis, dass Insel mitwechselt)
-- Kontextaufbau: Wiederverwendung/Erweiterung um Chat-Thread ohne feste `message_id` (Vorbild `message_context`, Limit 20)
-- Lauf: `agents::complete_text` für Insel-Ask; Microsoft `ask_copilot` nur bei leerem `write_with`
-- Spec-Baseline `openspec/specs/agent-providers` nach Archive
+- UI: `crates/app/src/views/composer/rewrite.rs`, `crates/app/src/views/conversation/copilot.rs`, overflow menu in `chat_header_actions.rs`
+- Settings copy optional: `settings_section.rs` (note that the island follows too)
+- Context build: reuse/extend chat thread without fixed `message_id` (pattern from `message_context`, limit 20)
+- Runtime: `agents::complete_text` for island ask; Microsoft `ask_copilot` only when `write_with` is empty
+- Spec baseline `openspec/specs/agent-providers` after archive

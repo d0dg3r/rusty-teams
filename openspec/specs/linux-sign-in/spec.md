@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Auf Linux startet und verwaltet die App Chrome/Chromium mit Remote-Debugging (eigener Profilordner), meldet sich darüber am Microsoft-Konto an, startet aus dem lokalen Cache und hält genau eine laufende Instanz.
+On Linux the app starts and manages Chrome/Chromium with remote debugging (dedicated profile folder), signs in to the Microsoft account through it, starts from the local cache, and keeps exactly one running instance.
 
 ## Requirements
 

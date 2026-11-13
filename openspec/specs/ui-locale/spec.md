@@ -1,110 +1,113 @@
 # ui-locale Specification
 
 ## Purpose
-Steuert die Sprache der App-Oberfläche: Ableitung aus der System-Locale beim ersten Start, dauerhafte Nutzerwahl und Anwendung auf alle produktseitigen UI-Texte in Englisch und Deutsch.
+
+Controls the language of the app chrome: derive from the OS locale on first launch, persist the user’s choice, and apply it to all product UI strings in English and German.
 
 ## Requirements
 
-### Requirement: Unterstützte UI-Sprachen
+### Requirement: Supported UI languages
 
-Die App MUST genau die UI-Sprachen Englisch und Deutsch anbieten. Deutsch MUST Deutschland-Orthografie im sichtbaren Produkttext verwenden.
+The app MUST offer exactly the UI languages English and German. German MUST use Germany orthography in visible product text.
 
-#### Scenario: Sprachenwahl zeigt DE und EN
+#### Scenario: Language picker shows DE and EN
 
-- **WHEN** der Nutzer die UI-Spracheinstellung öffnet
-- **THEN** stehen Englisch und Deutsch zur Auswahl
-- **AND** keine weitere UI-Sprache ist wählbar
+- **WHEN** the user opens the UI language setting
+- **THEN** English and German are available
+- **AND** no other UI language is selectable
 
-### Requirement: Erster Start folgt der OS-Locale
+### Requirement: First launch follows the OS locale
 
-Ohne gespeicherte UI-Spracheinstellung MUST die App die System-Locale auswerten: beginnt die Locale mit `de`, MUST die UI Deutsch sein; sonst MUST sie Englisch sein.
+Without a saved UI language setting, the app MUST read the system locale: if the locale starts with `de`, the UI MUST be German; otherwise it MUST be English.
 
-#### Scenario: System Deutsch
+#### Scenario: System German
 
-- **GIVEN** es existiert noch keine gespeicherte UI-Sprache
-- **WHEN** die App startet und die System-Locale mit `de` beginnt
-- **THEN** zeigt die App ihre Oberflächentexte auf Deutsch
+- **GIVEN** no saved UI language exists yet
+- **WHEN** the app starts and the system locale starts with `de`
+- **THEN** the app shows its chrome in German
 
-#### Scenario: System nicht Deutsch
+#### Scenario: System not German
 
-- **GIVEN** es existiert noch keine gespeicherte UI-Sprache
-- **WHEN** die App startet und die System-Locale nicht mit `de` beginnt
-- **THEN** zeigt die App ihre Oberflächentexte auf Englisch
+- **GIVEN** no saved UI language exists yet
+- **WHEN** the app starts and the system locale does not start with `de`
+- **THEN** the app shows its chrome in English
 
-### Requirement: Nutzerwahl überschreibt und persistiert
+### Requirement: User choice overrides and persists
 
-Der Nutzer MUST die UI-Sprache in den Einstellungen auf Englisch oder Deutsch setzen können. Die Wahl MUST gespeichert werden und MUST bei späteren Starts gelten, unabhängig von der dann aktuellen System-Locale.
+The user MUST be able to set the UI language to English or German in settings. The choice MUST be stored and MUST apply on later launches regardless of the then-current system locale.
 
-#### Scenario: Explizit Deutsch speichern
+#### Scenario: Explicitly save German
 
-- **WHEN** der Nutzer die UI-Sprache auf Deutsch setzt
-- **THEN** zeigt die App Deutsch
-- **AND** nach Neustart der App bleibt Deutsch aktiv, auch wenn die System-Locale nicht mit `de` beginnt
+- **WHEN** the user sets the UI language to German
+- **THEN** the app shows German
+- **AND** after restart German stays active even if the system locale does not start with `de`
 
-#### Scenario: Explizit Englisch speichern
+#### Scenario: Explicitly save English
 
-- **WHEN** der Nutzer die UI-Sprache auf Englisch setzt
-- **THEN** zeigt die App Englisch
-- **AND** nach Neustart bleibt Englisch aktiv, auch wenn die System-Locale mit `de` beginnt
+- **WHEN** the user sets the UI language to English
+- **THEN** the app shows English
+- **AND** after restart English stays active even if the system locale starts with `de`
 
-### Requirement: Umschalten ohne Neustart
+### Requirement: Switch without restart
 
-Ändert der Nutzer die UI-Sprache, MUST die sichtbare Oberfläche die neue Sprache annehmen, ohne dass die App beendet werden muss.
+When the user changes the UI language, the visible chrome MUST adopt the new language without quitting the app.
 
-#### Scenario: Wechsel in den Einstellungen
+#### Scenario: Change in settings
 
-- **WHEN** der Nutzer in einer laufenden Sitzung von Englisch auf Deutsch wechselt
-- **THEN** erscheinen Navigation, Einstellungen und Dialoge in Deutsch
-- **AND** die Sitzung bleibt geöffnet
+- **WHEN** the user switches from English to German in a running session
+- **THEN** navigation, settings, and dialogs appear in German
+- **AND** the session stays open
 
-### Requirement: Gesamte produktseitige UI ist lokalisiert
+### Requirement: All product UI is localized
 
-Alle von der App selbst stammenden Oberflächentexte MUST in der aktiven UI-Sprache erscheinen. Das umfasst Navigation, Einstellungen, Dialoge, Menüs, Tooltips, Tastaturkürzel-Beschriftungen, Toasts, Tray-Menü, Agent-UI und Nutzerhinweise aus Gesprächen und Fehlersituationen.
+All surface strings that originate from the app itself MUST appear in the active UI language. That includes navigation, settings, dialogs, menus, tooltips, shortcut labels, toasts, the tray menu, agent UI, and user-facing notices from calls and error paths.
 
-#### Scenario: Settings und Chrome
+#### Scenario: Settings and chrome
 
-- **WHEN** die UI-Sprache Deutsch ist
-- **THEN** sind Einstellungsnavigation, Rail und häufige Dialogaktionen (etwa Abbrechen und Speichern) auf Deutsch
+- **WHEN** the UI language is German
+- **THEN** settings navigation, the rail, and common dialog actions (for example Cancel and Save) are in German
 
-#### Scenario: Call-Hinweis
+#### Scenario: Call notice
 
-- **WHEN** die UI-Sprache Deutsch ist und ein lokal erzeugter Call-Hinweis angezeigt wird
-- **THEN** erscheint der Hinweistext auf Deutsch
+- **WHEN** the UI language is German and a locally produced call notice is shown
+- **THEN** the notice text appears in German
 
 #### Scenario: Tray
 
-- **WHEN** die UI-Sprache Deutsch ist und der Nutzer das Tray-Menü öffnet
-- **THEN** sind die Menüeinträge auf Deutsch
+- **WHEN** the UI language is German and the user opens the tray menu
+- **THEN** the menu entries are in German
 
-### Requirement: Fehlende Übersetzung fällt auf Englisch zurück
+### Requirement: Missing translation falls back to English
 
-Fehlt für einen UI-Text die Übersetzung in der aktiven Sprache, MUST die App den englischen Text zeigen statt eines leeren Labels oder eines rohen Schlüssels.
+If a UI string has no translation in the active language, the app MUST show the English text instead of an empty label or a raw key.
 
-#### Scenario: Fehlender Key unter Deutsch
+#### Scenario: Missing key under German
 
-- **WHEN** die UI-Sprache Deutsch ist und für einen UI-Text keine deutsche Übersetzung vorliegt
-- **THEN** zeigt die App den englischen Text für diesen Eintrag
-- **AND** die übrigen lokalisierten Texte bleiben auf Deutsch
+- **WHEN** the UI language is German and a UI string has no German translation
+- **THEN** the app shows the English text for that entry
+- **AND** the other localized strings stay German
 
-### Requirement: Fremder Content bleibt unverändert
+### Requirement: Foreign content stays unchanged
 
-Server- und Nutzerinhalte MUST die UI-Locale nicht ersetzen. Message-Translation, Captions-Spoken-Language, Adaptive-Card-Titel vom Server und Gerätenamen vom Betriebssystem bleiben eigene Pfade.
+Server and user content MUST NOT be replaced by the UI locale. Message translation, captions spoken language, Adaptive Card titles from the server, and OS device names remain their own paths.
 
-#### Scenario: Chat-Nachricht
+#### Scenario: Chat message
 
-- **WHEN** die UI-Sprache Deutsch ist und eine englische Chat-Nachricht angezeigt wird
-- **THEN** bleibt der Nachrichteninhalt Englisch
-- **AND** die umgebenden App-Steuerelemente sind Deutsch
+- **WHEN** the UI language is German and an English chat message is shown
+- **THEN** the message body stays English
+- **AND** the surrounding app controls are German
 
-#### Scenario: Message-Translation unverändert
+#### Scenario: Message translation unchanged
 
-- **WHEN** der Nutzer Message-Translation nutzt
-- **THEN** gilt weiterhin die bestehende Translation-Einstellung
-- **AND** die UI-Locale ersetzt diese Einstellung nicht
+- **WHEN** the user uses message translation
+- **THEN** the existing translation setting still applies
+- **AND** the UI locale does not replace that setting
 
 ### Requirement: New upstream chrome uses locale catalog
+
 New user-visible strings introduced by the upstream sync (call toolbar, splash, manage team, out-of-office notice, MCP review prompts) SHALL go through the UI locale catalog with English fallback for missing keys.
 
 #### Scenario: German UI covers new chrome
+
 - **WHEN** the UI language is German and the user opens splash, manage team, or a chat with an out-of-office notice
 - **THEN** those surfaces show German catalog strings when keys exist, otherwise English fallback

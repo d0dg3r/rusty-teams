@@ -2,27 +2,27 @@
 
 ## Why
 
-Nach dem 1:1-Kamera-Fix öffnet die App auf dem Logitech C930e (USB 2.0) oft YUYV 1920×1080 bei 5 fps statt MJPEG bei 30 fps. Das wirkt wie starker Verzug und Framedrops, obwohl der Encoder nicht CPU-limited ist.
+After the 1:1 camera fix the app on Logitech C930e (USB 2.0) often opens YUYV 1920×1080 at 5 fps instead of MJPEG at 30 fps. That feels like heavy lag and frame drops although the encoder is not CPU-limited.
 
 ## What Changes
 
-- Kamera-Open wählt Formate mit mindestens 30 fps; bei HD auf USB 2.0 bevorzugt MJPEG 1080p/720p.
-- MJPEG-Frames werden lokal (zune-jpeg → I420) dekodiert, ohne den langsamen Roh-Closest-Pfad.
-- UVC-Controls: feste Bildrate und 50-Hz-Netzfrequenz (Schweiz) best effort.
-- Call-Report/Timeline zeigt gewähltes Format, Capture-fps und Decode-Zeit.
+- Camera open chooses formats with at least 30 fps; on HD over USB 2.0 prefer MJPEG 1080p/720p.
+- MJPEG frames are decoded locally (zune-jpeg → I420) without the slow raw-closest path.
+- UVC controls: fixed frame rate and 50 Hz mains frequency (Switzerland) best effort.
+- Call report/timeline shows chosen format, capture fps, and decode time.
 
 ## Capabilities
 
 ### New Capabilities
 
-- (keine)
+- (none)
 
 ### Modified Capabilities
 
-- `camera-capture`: 30-fps-Formatwahl inkl. MJPEG, Decode-Pfad, UVC-Tuning und Telemetrie.
+- `camera-capture`: 30-fps format choice including MJPEG, decode path, UVC tuning, and telemetry.
 
 ## Impact
 
-- `crates/calling/src/camera.rs` (Open, Decode, Controls)
-- ggf. Call-Timeline/Stats für Format und Capture-fps
-- C930e und ähnliche UVC-Kameras ohne NV12 bei HD
+- `crates/calling/src/camera.rs` (open, decode, controls)
+- Possibly call timeline/stats for format and capture fps
+- C930e and similar UVC cameras without NV12 at HD

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Agents können über MCP Nachrichten und Reaktionen vorschlagen, freie Zeiten finden und Meetings organisieren; Proposals überleben Restarts.
+Agents can propose messages and reactions over MCP, find free times, and organize meetings; proposals survive restarts.
 
 ## Requirements
 

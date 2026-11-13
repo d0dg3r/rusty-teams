@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Hält die Tages- und Wochenansicht des Kalenders an der lokalen Uhrzeit: sichtbarer Viewport, wandernde Now-Linie und Nachführen, bis der Nutzer manuell scrollt.
+Keeps the calendar day and week views aligned to local time: visible viewport, moving now line, and follow mode until the user scrolls manually.
 
 ## ADDED Requirements
 

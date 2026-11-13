@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Mehrere Kalenderkonten (Teams/Outlook und Google, später weitere) im selben Raster, mit Heim-Kalender, wählbaren Schreibzielen und quellenspezifischen Zusagen sowie Erinnerungen.
+Multiple calendar accounts (Teams/Outlook and Google, more later) in the same grid, with a home calendar, selectable write targets, and source-specific RSVP and reminders.
 
 ## Requirements
 

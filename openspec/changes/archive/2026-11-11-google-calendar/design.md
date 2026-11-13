@@ -2,50 +2,50 @@
 
 ## Context
 
-Siehe `proposal.md` — Why. Heute: Poll in `crates/app-state/src/backend.rs` (`calendar_loop`) lädt nur `chatsvc::Calendar` (Teams MT `calendarView`). Anlegen und RSVP gehen über Graph `POST /me/events` bzw. accept/decline in `crates/chatsvc/src/calendar/schedule.rs`. Erinnerungen über Graph `reminderView` / snooze / dismiss in `reminders.rs`. Meet now ohne Postfach: Teams Scheduling-API in `calendar.rs` (`create_meet_now`). UI: `crates/app/src/views/calendar_view.rs`, New-Meeting-Dialog, Settings-Abschnitte unter `crates/app-state` / `crates/app`.
+See `proposal.md` — Why. Today: poll in `crates/app-state/src/backend.rs` (`calendar_loop`) loads only `chatsvc::Calendar` (Teams MT `calendarView`). Create and RSVP go through Graph `POST /me/events` and accept/decline in `crates/chatsvc/src/calendar/schedule.rs`. Reminders via Graph `reminderView` / snooze / dismiss in `reminders.rs`. Meet now without mailbox: Teams Scheduling API in `calendar.rs` (`create_meet_now`). UI: `crates/app/src/views/calendar_view.rs`, new-meeting dialog, settings sections under `crates/app-state` / `crates/app`.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Provider-Schnittstelle über Outlook und Google, Merge im Poll, Heim-Kalender + optionale Schreibziele.
-- Google OAuth Desktop, Tokens lokal, Polling statt Push-Webhook.
-- Create: Teams-Join-Link zuerst (Graph `onlineMeetings` oder bestehende Scheduling-API), dann Insert je Schreibziel.
-- RSVP und Reminder nach Event-Quelle routen; Google-Snooze lokal.
+- Provider interface across Outlook and Google, merge in poll, home calendar + optional write targets.
+- Google OAuth desktop, tokens local, polling instead of push webhook.
+- Create: Teams join link first (Graph `onlineMeetings` or existing Scheduling API), then insert per write target.
+- RSVP and reminders route by event source; Google snooze local.
 
 **Non-Goals:**
 
-- Gmail, Google Drive, Google Meet als Konferenz-Provider.
-- Öffentlicher Webhook / Google push sync channel.
-- Vollständige Sync-Engine (Offline-Queue über App-Neustart hinaus für Google-Writes — genug ist Best-Effort + Fehler anzeigen).
-- Upstream-PR an `danieldaeschle/rusty-teams` in diesem Change.
+- Gmail, Google Drive, Google Meet as conference provider.
+- Public webhook / Google push sync channel.
+- Full sync engine (offline queue across app restarts for Google writes — best-effort + show errors is enough).
+- Upstream PR to `danieldaeschle/rusty-teams` in this change.
 
 ## Decisions
 
-### 1. Capability-Modell: Accounts + Calendars, nicht «Google-only»-API in der UI
+### 1. Capability model: accounts + calendars, not a «Google-only» API in the UI
 
-- **Choice:** Persistenz und Settings sprechen von Account (Microsoft mailbox vs Google account) und Calendar-IDs (primary / secondary). Heim-Kalender und Schreibziele sind IDs dieses Modells.
-- **Why:** Später weitere Provider ohne Dialog-Umbau.
-- **Alternative:** Nur «Google an/aus» — verworfen wegen «später mehr Kalender».
+- **Choice:** Persistence and settings speak in terms of account (Microsoft mailbox vs Google account) and calendar IDs (primary / secondary). Home calendar and write targets are IDs in this model.
+- **Why:** More providers later without dialog rework.
+- **Alternative:** Only «Google on/off» — rejected because of «more calendars later».
 
-### 2. OAuth: Google Desktop / loopback, Scope Kalender
+### 2. OAuth: Google desktop / loopback, calendar scope
 
-- **Choice:** Authorization Code + PKCE (oder installierte Desktop-App), Scopes mindestens Kalender lesen/schreiben (`calendar.events` / `calendar` nach Bedarf). Refresh-Token unter App-Datenverzeichnis, getrennt vom MSAL-Cache.
-- **Why:** Passt zu Desktop ohne Browser-Plugin; Linux-Sign-in bleibt Chrome für Microsoft.
-- **Alternative:** Nur ICS-Subscribe read-only — deckt Schreiben nicht ab.
+- **Choice:** Authorization code + PKCE (or installed desktop app), scopes at least calendar read/write (`calendar.events` / `calendar` as needed). Refresh token under app data directory, separate from MSAL cache.
+- **Why:** Fits desktop without a browser plugin; Linux sign-in stays Chrome for Microsoft.
+- **Alternative:** ICS subscribe read-only only — does not cover writes.
 
-### 3. Read-Pfad: parallel pollen, dann mergen
+### 3. Read path: poll in parallel, then merge
 
-- **Choice:** `calendar_loop` **und** der Wochen-/Monats-Load (`load_calendar_week`) holen Outlook (wenn ausgewählt; Fehler nicht fatal wenn Google da) und Google `events.list` für gewählte Kalender im gleichen Zeitfenster; Merge nach `ical_uid` bzw. normalisiertem Teams-Join-URL; `CalendarEvent` um `source` / Account- und Calendar-ID erweitern. Poll-Ergebnisse fliessen auch in das sichtbare Raster (nicht nur Agenda).
-- **Why:** UI bleibt ein Raster; Dedup vermeidet Doppelblöcke bei «beide schreiben». Nur Graph in der Week-View war ein Loch — Google blieb unsichtbar.
-- **Alternative:** Zwei getrennte Raster — schlechter UX.
+- **Choice:** `calendar_loop` **and** week/month load (`load_calendar_week`) fetch Outlook (when selected; errors not fatal if Google is connected) and Google `events.list` for selected calendars in the same time window; merge on `ical_uid` or normalized Teams join URL; extend `CalendarEvent` with `source` / account and calendar ID. Poll results also feed the visible grid (not agenda only).
+- **Why:** UI stays one grid; dedup avoids double blocks when «both write». Graph-only week view was a gap — Google stayed invisible.
+- **Alternative:** Two separate grids — worse UX.
 
-### 4. Create-Pfad: Meeting-Link zuerst, dann Kalender-Inserts
+### 4. Create path: meeting link first, then calendar inserts
 
 ```
 New meeting
   -> resolve write targets (home + optional extras)
-  -> create Teams online meeting (Graph onlineMeetings oder Scheduling-API)
+  -> create Teams online meeting (Graph onlineMeetings or Scheduling API)
   -> for each target:
        Outlook home/extra -> Graph POST /me/events with isOnlineMeeting
                             OR patch body with join URL if meeting already created
@@ -54,49 +54,49 @@ New meeting
   -> surface join URL even if a secondary insert fails
 ```
 
-- **Why:** Google kann kein `teamsForBusiness` ausstellen; ohne Postfach scheitert der heutige Ein-Schritt-Graph-POST.
-- **Alternative:** Nur Graph `isOnlineMeeting` und Google als Kopie danach — bricht ohne Mailbox.
+- **Why:** Google cannot issue `teamsForBusiness`; without a mailbox today’s one-step Graph POST fails.
+- **Alternative:** Graph `isOnlineMeeting` only and Google as copy after — breaks without mailbox.
 
-Wenn Heim-Kalender Outlook ist und keine Extra-Ziele: heutiger Ein-Schritt-Pfad darf bleiben (weniger Roundtrips).
+When home calendar is Outlook and there are no extra targets: today’s one-step path may remain (fewer round trips).
 
-### 5. RSVP / Reminders
+### 5. RSVP / reminders
 
-- **RSVP:** An `source` entscheiden — Outlook: `Calendar::respond`; Google: `events.patch` `attendees[].responseStatus` + `sendUpdates`.
-- **Reminders / Start-Notifications:** Gleiches Toast-Modell für Outlook und Google (Soon ≈ 5 Min vorher, Started, Live; Join / Snooze / Dismiss / Chime). Outlook weiter über Graph `reminderView` (Snooze/Dismiss schreiben dorthin). Google: lokale Phasen aus Event-Start/`join_url`; Outlook-`allows`-Gate gilt **nur** für Outlook-Events (sonst wurden Google-Toasts unterdrückt, sobald ReminderView geladen war). Reminder-Tick liest Agenda **und** Wochenraster (Dedup). Google-Snooze/Dismiss bleiben lokal.
+- **RSVP:** Decide by `source` — Outlook: `Calendar::respond`; Google: `events.patch` `attendees[].responseStatus` + `sendUpdates`.
+- **Reminders / start notifications:** Same toast model for Outlook and Google (Soon ≈ 5 min before, Started, Live; Join / Snooze / Dismiss / Chime). Outlook still via Graph `reminderView` (snooze/dismiss write there). Google: local phases from event start/`join_url`; Outlook `allows` gate applies **only** to Outlook events (otherwise Google toasts were suppressed once ReminderView loaded). Reminder tick reads agenda **and** week grid (dedup). Google snooze/dismiss stay local.
 
-### 6. Settings UI und Kalenderliste in der Ansicht
+### 6. Settings UI and calendar list in the view
 
-- Abschnitt «Calendar» / «Kalenderkonten»: Connect Google, Disconnect, Liste Kalender (primary vorselektiert), Heim-Kalender-Dropdown, Checkboxen «auch schreiben nach …».
-- **Calendar-View:** linke Liste «CALENDARS» mit Outlook + jedem Google-Kalender (An/Aus), analog Teams — ohne Settings öffnen zu müssen.
-- New-meeting-Dialog: Schreibziele aus Settings als Default, optional Override nur wenn nötig (Default: Settings reichen).
+- Section «Calendar» / calendar accounts: connect Google, disconnect, calendar list (primary pre-selected), home calendar dropdown, checkboxes «also write to …».
+- **Calendar view:** left «CALENDARS» list with Outlook + each Google calendar (on/off), like Teams — without opening Settings.
+- New-meeting dialog: write targets from settings as default, optional override only when needed (default: settings suffice).
 
-### 6b. All-day-Darstellung und Event-Detail
+### 6b. All-day display and event detail
 
-- Google liefert Feiertage/Wochenmarker oft als `dateTime` 00:00→00:00 (lokale Mitternacht) statt `date`. Das Raster behandelt diese wie `all_day`: nur All-day-Zeile, kein Vollhöhen-Block im Stundenraster (`is_effective_all_day` mit lokalem Offset; auch Mehr-Tage 00:00→23:59).
-- Klick auf einen Block (timed oder all-day) öffnet einen **Event-Detail-Dialog** (Zeit, Quelle, Organizer, Join/RSVP/Chat/**Delete**). Kein automatischer Wechsel in den Meeting-Chat — der liess Google-Termine «verschwinden» bzw. öffnete nie die Details. Chat bleibt Kontextmenü / Dialog-Button.
-- **Join:** Sobald ein Teams-Join-Link am Event hängt (`online` + URL), erscheint **Join** im Detail-Dialog und am timed Kalenderblock — unabhängig vom Join-Zeitfenster (das Fenster gilt weiter für Reminder/Toasts).
-- **Delete:** Optimistic Remove aus dem Raster; Outlook `DELETE /me/events/{id}` (iCal-UID-Fallback wie RSVP); Google `events.delete` mit `sendUpdates` analog RSVP. Bei Fehler Restore + Notice.
-- **Raster-SoT:** `load_calendar_week` füllt `calendar_week.events`. Der Agenda-Poll (`apply_calendar`) schreibt nur `calendar_events` und darf das Wochen-/Monatsraster nicht mit dem kürzeren Agenda-Fenster überschreiben (sonst verschwinden z. B. Mo/Di nach Delete/Poll). GPUI-Element-IDs sind tag-qualifiziert (`object_id` + Datum), damit Mehr-Tage-All-day-Chips beim Scrollen nicht kollidieren.
+- Google often delivers holidays/week markers as `dateTime` 00:00→00:00 (local midnight) instead of `date`. The grid treats these like `all_day`: all-day row only, no full-height block in the hour grid (`is_effective_all_day` with local offset; multi-day 00:00→23:59 too).
+- Click on a block (timed or all-day) opens an **event detail dialog** (time, source, organizer, Join/RSVP/Chat/**Delete**). No automatic switch to meeting chat — that made Google events «disappear» or never show details. Chat remains context menu / dialog button.
+- **Join:** As soon as a Teams join link is on the event (`online` + URL), **Join** appears in the detail dialog and on the timed calendar block — regardless of join time window (window still applies to reminders/toasts).
+- **Delete:** Optimistic remove from grid; Outlook `DELETE /me/events/{id}` (iCal UID fallback like RSVP); Google `events.delete` with `sendUpdates` like RSVP. On failure restore + notice.
+- **Grid SoT:** `load_calendar_week` fills `calendar_week.events`. Agenda poll (`apply_calendar`) writes only `calendar_events` and must not overwrite week/month grid with the shorter agenda window (otherwise e.g. Mon/Tue vanish after delete/poll). GPUI element IDs are day-qualified (`object_id` + date) so multi-day all-day chips do not collide on scroll.
 
-### 7. Lieferung
+### 7. Delivery
 
-- Entwicklung und Release auf Remote `fork` (`d0dg3r/rusty-teams`). Kein Riesen-Upstream-PR.
+- Development and release on remote `fork` (`d0dg3r/rusty-teams`). No giant Upstream PR.
 
 ## Risks / Trade-offs
 
-- [Google OAuth Client-Registrierung / Verification] → Desktop-Client im Google Cloud Projekt des Forks; Secrets nicht committen, Config über Env/Build-Flag dokumentieren.
-- [Doppel-Events trotz Merge] → Merge-Keys (iCal UID, Join-URL) unit-testen; bei nur Titel/Zeit vorsichtig nicht auto-mergen.
-- [Create: Meeting existiert, Insert fehlgeschlagen] → Join-Link trotzdem anzeigen; Fehlertext welches Ziel fehlschlug; Poll räumt keine Geister-Meetings auf (onlineMeeting bleibt).
-- [Token-Diebstahl lokal] → gleiche Schutzklasse wie MSAL-Cache; kein Sync in Cloud.
-- [Rate limits Google] → gleiches Fenster wie heutiger Poll; Backoff bei 429.
+- [Google OAuth client registration / verification] → Desktop client in the fork’s Google Cloud project; do not commit secrets, document config via env/build flag.
+- [Duplicate events despite merge] → Unit-test merge keys (iCal UID, join URL); do not auto-merge on title/time only.
+- [Create: meeting exists, insert failed] → Still show join link; error text which target failed; poll does not clean orphan meetings (onlineMeeting remains).
+- [Local token theft] → Same protection class as MSAL cache; no cloud sync.
+- [Google rate limits] → Same window as today’s poll; backoff on 429.
 
 ## Migration Plan
 
-- Feature hinter verbundenem Google-Konto: ohne Verbindung unverändert Outlook-only.
-- Bestehende Nutzer: Heim-Kalender default = Outlook wenn Mailbox ok, sonst erster Google-Kalender nach Connect.
-- Rollback: Disconnect Google + Feature-Flag/Build ohne Google-Client-ID → alter Pfad.
+- Feature behind connected Google account: without connection unchanged Outlook-only.
+- Existing users: home calendar default = Outlook when mailbox ok, else first Google calendar after connect.
+- Rollback: disconnect Google + feature flag/build without Google client ID → old path.
 
 ## Open Questions
 
-- Exakte Google OAuth Client-Bereitstellung für den Fork-Build (welche Client-ID-Quelle zur Compile-Zeit) — ändert nicht die Specs, nur Packaging.
-- Ob sekundäre Google-Kalender (nicht primary) im ersten Slice schon verbindbar sind oder nur primary + später Liste — Spec erlaubt Liste; Implementierung kann primary zuerst shippen und weitere Kalender im selben Settings-UI nachziehen.
+- Exact Google OAuth client provisioning for the fork build (which client ID source at compile time) — does not change specs, only packaging.
+- Whether secondary Google calendars (not primary) are connectable in the first slice or only primary + list later — spec allows list; implementation can ship primary first and add calendars in the same settings UI.

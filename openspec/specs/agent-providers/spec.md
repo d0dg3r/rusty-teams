@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Die Fork-App erkennt lokale Agent-CLIs, lässt Profile und Aktionen in den Einstellungen pflegen und startet Agent-Läufe inkl. Chat-Runs aus der UI.
+The fork app discovers local agent CLIs, lets users manage profiles and actions in settings, and starts agent runs including chat runs from the UI.
 
 ## Requirements
 

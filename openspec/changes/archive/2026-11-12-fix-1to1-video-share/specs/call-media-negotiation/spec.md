@@ -2,24 +2,29 @@
 
 ## Purpose
 
-Signaling und SDP für Kamera und Screen-Share in verbundenen Gesprächen: Escalation-Answers und Same-peer-Renegotiation verhalten sich so, dass die Gegenseite die Media-Zeilen akzeptiert und verspätete Kamera-Answers noch greifen.
+Signaling and SDP for camera and screen share in connected calls: escalation answers and same-peer renegotiation behave so the remote side accepts media lines and delayed camera answers still apply.
 
 ## ADDED Requirements
 
-### Requirement: Escalation-Answer behält die Offer-Zeilenzahl
-Bei einer Media-Renegotiation mit Escalation MUST die an Teams signalisierte Answer dieselbe Anzahl Media-Zeilen haben wie das Remote-Offer. Eine intern gefaltete Multi-Stream-Zeile MUST als genau eine signalisierte m-line zurückgehen.
+### Requirement: Escalation answer keeps offer line count
 
-#### Scenario: Multi-Stream-Zeile ohne Extra-Mid
-- **WHEN** das Remote-Offer eine Video-Zeile mit `x-multi-stream` trägt, die intern in mehrere Browser-Mids entfaltet wurde
-- **THEN** enthält die signalisierte Answer für diese Rolle genau eine m-line und keine zusätzliche Mid, die nur der internen Entfaltung dient
+During media renegotiation with escalation, the answer signaled to Teams MUST have the same number of media lines as the remote offer. An internally folded multi-stream line MUST go back as exactly one signaled m-line.
 
-#### Scenario: Zeilenzahl stimmt mit dem Offer
-- **WHEN** das Remote-Offer N Media-Zeilen hat
-- **THEN** hat die signalisierte Escalation-Answer ebenfalls N Media-Zeilen
+#### Scenario: Multi-stream line without extra mid
 
-### Requirement: Verspätete Same-peer-Kamera-Answer gilt
-Sendet die App in einem Direct-1:1 eine Same-peer-Renegotiation für Kamera an und trifft die passende Answer erst kurz nach dem lokalen Answer-Timeout ein, MUST die App diese Answer noch anwenden, sofern sie zum zuletzt gesendeten Offer gehört. Eine Answer mit empfangsseitiger Kamera-Richtung (`recvonly` aus Sicht der Gegenseite) MUST als erfolgreiches Freigeben des lokalen Sendens gelten.
+- **WHEN** the remote offer carries a video line with `x-multi-stream` that was unfolded internally into several browser mids
+- **THEN** the signaled answer for that role contains exactly one m-line and no extra mid used only for internal unfolding
 
-#### Scenario: Answer wenige Sekunden nach Timeout
-- **WHEN** das lokale Same-peer-Kamera-Offer wegen Timeout zurückgerollt wurde und kurz danach die passende Answer eintrifft
-- **THEN** wendet die App die Answer an und die Kamera bleibt bzw. wird wieder als sendend geführt, statt die Answer zu verwerfen
+#### Scenario: Line count matches the offer
+
+- **WHEN** the remote offer has N media lines
+- **THEN** the signaled escalation answer also has N media lines
+
+### Requirement: Late same-peer camera answer counts
+
+If the app sends a same-peer renegotiation for camera in a direct 1:1 and the matching answer arrives shortly after the local answer timeout, the app MUST still apply that answer when it belongs to the last sent offer. An answer with receive-side camera direction (`recvonly` from the remote party’s view) MUST count as successfully enabling local send.
+
+#### Scenario: Answer a few seconds after timeout
+
+- **WHEN** the local same-peer camera offer was rolled back due to timeout and the matching answer arrives shortly after
+- **THEN** the app applies the answer and the camera stays or becomes sending again instead of discarding the answer

@@ -2,108 +2,108 @@
 
 ## Purpose
 
-Lokales Teilen von Bildschirm oder Fenster in einem Gespräch: unter Wayland über den Dialog des Desktops, auf Windows und reinem X11 über die Liste in der App.
+Local screen or window sharing in a call: on Wayland via the desktop dialog; on Windows and plain X11 via the in-app list.
 
 ## ADDED Requirements
 
-### Requirement: Wayland öffnet den Desktop-Dialog
+### Requirement: Wayland opens the desktop dialog
 
-In einem verbundenen Gespräch unter Wayland MUST die App den ScreenCast-Dialog des Desktops öffnen. Sie MUST Quellen dort nicht selbst mit Vorschaubildern auflisten.
+In a connected call under Wayland the app MUST open the desktop ScreenCast dialog. It MUST NOT list sources itself with thumbnails.
 
-#### Scenario: Ganzer Bildschirm
+#### Scenario: Entire screen
 
-- **WHEN** der Nutzer unter Wayland den ganzen Bildschirm teilen wählt
-- **THEN** öffnet das Desktop einen Dialog nur für Monitore
-- **AND** die App zeigt keine eigene Quellenliste mit Vorschaubildern
+- **WHEN** the user chooses to share the entire screen under Wayland
+- **THEN** the desktop opens a dialog for monitors only
+- **AND** the app does not show its own thumbnail source list
 
-#### Scenario: Ein Fenster
+#### Scenario: A window
 
-- **WHEN** der Nutzer unter Wayland ein Fenster teilen wählt
-- **THEN** öffnet das Desktop einen Dialog nur für Fenster
+- **WHEN** the user chooses to share a window under Wayland
+- **THEN** the desktop opens a dialog for windows only
 
-#### Scenario: XWayland daneben
+#### Scenario: XWayland alongside
 
-- **WHEN** `WAYLAND_DISPLAY` gesetzt ist und zusätzlich ein X11-`DISPLAY` existiert
-- **THEN** öffnet Teilen denselben Desktop-Dialog wie ohne dieses `DISPLAY`
+- **WHEN** `WAYLAND_DISPLAY` is set and an X11 `DISPLAY` also exists
+- **THEN** share opens the same desktop dialog as without that `DISPLAY`
 
-#### Scenario: KDE, GNOME und Hyprland
+#### Scenario: KDE, GNOME, and Hyprland
 
-- **WHEN** der Nutzer auf KDE, GNOME oder Hyprland dieselbe Teilen-Art wählt
-- **THEN** erscheint der Dialog dieses Desktops für Monitore beziehungsweise Fenster
-- **AND** die App zeigt auf keinem der drei Desktops eine eigene Fensterliste
+- **WHEN** the user picks the same share kind on KDE, GNOME, or Hyprland
+- **THEN** that desktop’s dialog appears for monitors or windows
+- **AND** the app does not show its own window list on any of the three
 
-### Requirement: Teilen braucht unter Wayland keine Quellenliste
+### Requirement: Wayland share needs no prefilled source list
 
-In einem verbundenen Gespräch unter Wayland MUST der Nutzer beide Teilen-Aktionen erreichen, ohne dass die App zuvor Bildschirme oder Fenster aufgezählt hat.
+In a connected call under Wayland the user MUST reach both share actions without the app enumerating screens or windows first.
 
-#### Scenario: Verbunden ohne vorausgefüllte Liste
+#### Scenario: Connected without a prefilled list
 
-- **WHEN** ein Gespräch verbunden ist und die Sitzung Wayland ist
-- **THEN** kann der Nutzer ganzen Bildschirm und ein Fenster wählen
-- **AND** das Teilen-Steuerelement ist nicht deaktiviert, nur weil keine Quellenliste vorliegt
+- **WHEN** a call is connected and the session is Wayland
+- **THEN** the user can choose entire screen and a window
+- **AND** the share control is not disabled merely because no source list exists
 
-### Requirement: Bestehende Teilen-Optionen bleiben
+### Requirement: Existing share options remain
 
-Das Teilen-Menü unter Wayland MUST die bestehenden Optionen für Computer-Ton, Bewegungsoptimierung und die eigene Person über dem Inhalt weiter anbieten.
+The Wayland share menu MUST still offer computer sound, motion optimization, and showing the local person over content.
 
-#### Scenario: Menü vor dem Dialog
+#### Scenario: Menu before the dialog
 
-- **WHEN** der Nutzer unter Wayland das Teilen-Menü öffnet
-- **THEN** sind «Include computer sound», «Optimize for motion» und «Show me over my content» erreichbar
-- **AND** daneben stehen die zwei Aktionen für Bildschirm und Fenster
+- **WHEN** the user opens the share menu under Wayland
+- **THEN** «Include computer sound», «Optimize for motion», and «Show me over my content» are available
+- **AND** beside them are the two actions for screen and window
 
-### Requirement: Bestätigtes Teilen bleibt in der App steuerbar
+### Requirement: Confirmed share stays controllable in the app
 
-Nach Bestätigung einer Quelle im Desktop-Dialog MUST die App die lokale Freigabe anzeigen, und der Nutzer MUST sie beenden können, ohne das Gespräch zu verlassen.
+After the user confirms a source in the desktop dialog, the app MUST show local sharing and the user MUST be able to stop it without leaving the call.
 
-#### Scenario: Banner und Stopp
+#### Scenario: Banner and stop
 
-- **WHEN** der Nutzer im Desktop-Dialog eine Quelle bestätigt
-- **THEN** zeigt die App, dass lokal geteilt wird
-- **AND** der Nutzer kann das Teilen beenden und das Gespräch läuft weiter
+- **WHEN** the user confirms a source in the desktop dialog
+- **THEN** the app shows that local share is active
+- **AND** the user can stop sharing while the call continues
 
-### Requirement: Abbruch lässt das Gespräch
+### Requirement: Cancel leaves the call alone
 
-Bricht der Nutzer den Desktop-Dialog ab, MUST keine Freigabe starten und MUST das Gespräch verbunden bleiben.
+If the user cancels the desktop dialog, no share MUST start and the call MUST stay connected.
 
-#### Scenario: Dialog abgebrochen
+#### Scenario: Dialog cancelled
 
-- **WHEN** der Nutzer den Desktop-Dialog abbricht
-- **THEN** startet kein Teilen
-- **AND** das Gespräch bleibt verbunden
-- **AND** es erscheint keine Fehlermeldung
+- **WHEN** the user cancels the desktop dialog
+- **THEN** sharing does not start
+- **AND** the call stays connected
+- **AND** no error toast appears
 
-### Requirement: Fehlendes Portal ist sichtbar
+### Requirement: Missing portal is visible
 
-Kann die App den ScreenCast-Dialog nicht öffnen, MUST sie das in einem verbundenen Gespräch klar anzeigen.
+If the app cannot open the ScreenCast dialog, it MUST show that clearly in a connected call.
 
-#### Scenario: Portal fehlt
+#### Scenario: Portal missing
 
-- **WHEN** der Nutzer unter Wayland Teilen startet und kein ScreenCast-Portal erreichbar ist
-- **THEN** sieht der Nutzer einen klaren Hinweis
-- **AND** der Knopf wirkt nicht lediglich wie «noch nicht verbunden»
+- **WHEN** the user starts share under Wayland and no ScreenCast portal is available
+- **THEN** the user sees a clear notice
+- **AND** the control does not look merely like «not connected yet»
 
-### Requirement: Ganzer Bildschirm ohne eigenes Fenster
+### Requirement: Entire screen without our own window
 
-Teilt der Nutzer den ganzen Bildschirm, MUST das Hauptfenster der App nicht im geteilten Bild bleiben.
+When sharing the entire screen, the app main window MUST NOT remain in the shared picture.
 
-#### Scenario: Hauptfenster weicht
+#### Scenario: Main window steps aside
 
-- **WHEN** der Nutzer den ganzen Bildschirm teilt und der Desktop-Dialog bestätigt ist
-- **THEN** ist das Hauptfenster der App nicht Teil des geteilten Bildes
+- **WHEN** the user shares the entire screen and the desktop dialog is confirmed
+- **THEN** the app main window is not part of the shared picture
 
-### Requirement: Windows und reines X11 behalten die Liste
+### Requirement: Windows and plain X11 keep the list
 
-Auf Windows und in einer X11-Sitzung ohne Wayland MUST das Teilen-Menü Bildschirme und Fenster mit Vorschaubildern anbieten, und die Auswahl MUST das Teilen ohne Desktop-Portal-Dialog starten.
+On Windows and in an X11 session without Wayland, the share menu MUST offer screens and windows with thumbnails, and choosing a source MUST start share without a desktop portal dialog.
 
-#### Scenario: Liste auf Windows
+#### Scenario: List on Windows
 
-- **WHEN** der Nutzer auf Windows in einem verbundenen Gespräch Teilen öffnet
-- **THEN** zeigt das Menü Bildschirme und Fenster mit Vorschaubildern
-- **AND** die Auswahl einer Quelle startet das Teilen ohne Desktop-Portal-Dialog
+- **WHEN** the user opens share in a connected call on Windows
+- **THEN** the menu shows screens and windows with thumbnails
+- **AND** choosing a source starts share without a desktop portal dialog
 
-#### Scenario: Reines X11
+#### Scenario: Plain X11
 
-- **WHEN** die Sitzung X11 ist und `WAYLAND_DISPLAY` nicht gesetzt ist
-- **THEN** zeigt das Menü Bildschirme und Fenster mit Vorschaubildern
-- **AND** die Auswahl einer Quelle startet das Teilen ohne Desktop-Portal-Dialog
+- **WHEN** the session is X11 and `WAYLAND_DISPLAY` is unset
+- **THEN** the menu shows screens and windows with thumbnails
+- **AND** choosing a source starts share without a desktop portal dialog

@@ -2,32 +2,32 @@
 
 ## Why
 
-Fenster- und Bildschirmteilen folgt heute dem Windows-Modell: die App zählt Quellen auf und zeigt sie mit Vorschaubildern. Unter Wayland darf eine App fremde Fenster nicht auflisten. Auf KDE, GNOME und Hyprland bleibt der Share-Knopf dadurch leer, tot oder hängt an einem Platzhalter, obwohl PipeWire und das ScreenCast-Portal auf dem Desktop schon bereitstehen.
+Window and screen sharing today follows the Windows model: the app lists sources and shows thumbnails. Under Wayland an app may not enumerate foreign windows. On KDE, GNOME, and Hyprland the share button therefore stays empty, dead, or stuck on a placeholder although PipeWire and the ScreenCast portal are already available on the desktop.
 
 ## What Changes
 
-- Unter Wayland (gesetztes `WAYLAND_DISPLAY`, auch wenn daneben ein XWayland-`DISPLAY` existiert) bietet das Teilen-Menü zwei Aktionen ohne Vorschaubilder: ganzen Bildschirm teilen, ein Fenster teilen.
-- Jede Aktion öffnet den ScreenCast-Dialog des laufenden Desktops. KDE, GNOME und Hyprland zeichnen diesen Dialog selbst; die App stellt immer dieselbe Anfrage, gefiltert auf Monitore beziehungsweise Fenster.
-- Nach der Auswahl laufen die Frames über die bestehende Teilen-Strecke (Banner, Stopp, Bühne).
-- Abbruch des Dialogs lässt das Gespräch laufen, ohne Fehlermeldung.
-- Fehlt ein ScreenCast-Portal, erscheint ein klarer Hinweis statt eines still toten Knopfes.
-- Beim Teilen des ganzen Bildschirms weicht das eigene Fenster, damit es nicht in der Aufnahme bleibt.
-- Windows und eine reine X11-Session behalten die bestehende Liste mit Vorschaubildern.
+- Under Wayland (set `WAYLAND_DISPLAY`, even when an XWayland `DISPLAY` also exists) the share menu offers two actions without thumbnails: share entire screen, share a window.
+- Each action opens the running desktop’s ScreenCast dialog. KDE, GNOME, and Hyprland draw that dialog themselves; the app always makes the same request, filtered to monitors or windows respectively.
+- After selection, frames flow through the existing share pipeline (banner, stop, stage).
+- Cancelling the dialog leaves the call running without an error notice.
+- When no ScreenCast portal is available, a clear notice appears instead of a silently dead button.
+- When sharing the entire screen, the app’s own window steps aside so it does not remain in the capture.
+- Windows and a plain X11 session keep the existing list with thumbnails.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `screen-share`: Quelle für lokales Bildschirm- und Fensterteilen in einem Gespräch wählen, inklusive Wayland-Portal und der bestehenden Liste auf Windows und reinem X11.
+- `screen-share`: Choose a source for local screen or window sharing in a call, including Wayland portal and the existing list on Windows and plain X11.
 
 ### Modified Capabilities
 
-- Keine. `linux-call-audio` (Computer-Ton) bleibt unverändert.
+- None. `linux-call-audio` (computer sound) stays unchanged.
 
 ## Impact
 
-- Teilen-Menü und der Start der lokalen Aufnahme in einem laufenden Gespräch.
-- Laufzeit unter Wayland: ScreenCast-Portal des Desktops (KDE, GNOME, Hyprland), PipeWire, ein GLib-Main-Loop vor dem Portal-Aufruf. Die Libwebrtc-Build enthält PipeWire bereits.
-- Kein Compositor-Sonderweg (`hyprctl` und vergleichbare private Listen).
-- Empfang einer fremden Freigabe, H.264-Bühne, Computer-Ton, Restore-Token und Vorschaubilder im eigenen Menü unter Wayland bleiben ausserhalb dieses Changes.
-- Lieferung auf dem Fork. Kein Upstream-PR der ganzen Fork-Linie.
+- Share menu and starting local capture in a connected call.
+- Runtime under Wayland: desktop ScreenCast portal (KDE, GNOME, Hyprland), PipeWire, a GLib main loop before the portal call. The bundled libwebrtc build already includes PipeWire.
+- No compositor-specific path (`hyprctl` and similar private lists).
+- Receiving a remote share, H.264 stage, computer sound, restore token, and thumbnails in our own menu under Wayland stay outside this change.
+- Delivery on the fork. No Upstream PR of the whole fork line.

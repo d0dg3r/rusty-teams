@@ -1,44 +1,51 @@
 schema: spec-driven
 
 context: |
-  Language: German (Schweizer Schreibung: kein Eszett, Anführungszeichen «…»).
-  All artifacts must be written in German.
+  Language: English.
+  All OpenSpec artifacts MUST be written in English.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
 
-  OpenSpec hält beobachtbares Produktverhalten (Capabilities, Requirements, Scenarios).
-  Es ersetzt nicht AGENTS.md, .cursor/rules/ (fork-workflow, openspec-cli-path) oder
-  die Service-/Code-Doku — dort bleibt, wie Agents arbeiten, pushen und releasen.
+  OpenSpec holds observable product behaviour (capabilities, requirements, scenarios).
+  It does not replace AGENTS.md, .cursor/rules/ (fork-workflow, openspec-cli-path,
+  openspec-english), or service/code docs — those still define how agents work,
+  push, and release.
 
-  Specs beschreiben nur Verhalten und testbare Szenarien. Keine Rust-Typen,
-  keine Crate-Namen als Pflicht, keine Implementierungsschritte (die gehören
-  in design.md oder tasks.md).
+  Specs describe behaviour and testable scenarios only. No Rust types, no crate
+  names as requirements, no implementation steps (those belong in design.md or
+  tasks.md).
 
-  Baseline-Hauptspecs unter openspec/specs/ sind der Fork-Jetztstand.
-  Danach wachsen Specs nur noch mit dem nächsten Change. Reines Refactoring,
-  Tooling oder Doku: skip_specs: true am Change.
+  Baseline specs under openspec/specs/ are the fork as-of now.
+  After that, specs grow only with the next change. Pure refactoring, tooling,
+  or docs: skip_specs: true on the change.
 
-  Remotes: fork = d0dg3r/rusty-teams (entwickeln + Releases);
-  origin = danieldaeschle/rusty-teams (nur gezielte Upstream-PRs).
+  Remotes: origin = forgejo.lan/devops-geek/rusty-teams (SoT — develop, tags, releases);
+  github = d0dg3r/rusty-teams (offsite mirror; everyday read-only);
+  upstream = danieldaeschle/rusty-teams (fetch + thin targeted PRs only).
 
 rules:
   proposal:
     - State why now, what changes, and which capabilities are new or modified.
     - Mark out of scope explicitly when behaviour is unchanged (skip_specs).
+    - Write the whole proposal in English.
   specs:
     - One capability path per durable system behaviour (kebab-case).
     - Prefer scenarios over prose; keep ADDED/MODIFIED/REMOVED deltas precise.
+    - Write requirements and scenarios in English.
   design:
     - Point at real repo paths (crates/, scripts/) when useful.
     - Respect the fork-vs-upstream remote rules when delivery is affected.
+    - Write the design in English.
   tasks:
     - Checklist items that an agent can check off; include verify via
       cargo test -p <crate> --lib (or a narrower filter) when code changes.
+    - Write task text in English.
 
 operations:
   apply:
     guidance:
       - Follow AGENTS.md and alwaysApply rules while implementing.
-      - Push everyday work to fork, never to origin.
+      - Push everyday work to origin (Forgejo SoT), never to upstream.
   archive:
     guidance:
       - Merge deltas into openspec/specs/; summarise what behaviour is now SoT.
+      - Archived artifacts stay in English.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Calls und Meetings laufen in einem eigenen Fenster mit Teams-ähnlicher Toolbar, Gallery-Paging und Join-Preview.
+Calls and meetings run in a dedicated window with a Teams-like toolbar, gallery paging, and join preview.
 
 ## ADDED Requirements
 

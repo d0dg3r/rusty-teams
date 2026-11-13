@@ -1,0 +1,21 @@
+---
+description: OpenSpec artifacts in this repo are always English
+alwaysApply: true
+---
+
+# OpenSpec language — English only
+
+All OpenSpec work under `openspec/` is **English**, permanently.
+
+## Required
+
+1. `openspec/config.yaml`, proposals, designs, tasks, specs, and archives: English only.
+2. Structural headings and `SHALL` / `MUST` stay English (already the OpenSpec convention).
+3. Do not write new German OpenSpec prose; if you touch a German leftover, translate it to English in the same pass.
+4. Product UI may still offer German (see `ui-locale`); that is app chrome, not OpenSpec authoring language.
+
+## Do not
+
+- New OpenSpec changes in German
+- Mixing German requirements with English scenarios in the same spec
+- Treating chat/UI language (DE/EN) as the OpenSpec authoring language

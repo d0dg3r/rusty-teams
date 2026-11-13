@@ -2,188 +2,193 @@
 
 ## Purpose
 
-Lokales Teilen von Bildschirm oder Fenster in einem Gespräch: unter Wayland und auf macOS über den System-Dialog, auf Windows und reinem X11 über die Liste in der App.
+Local screen or window sharing in a call: on Wayland and macOS via the system dialog; on Windows and plain X11 via the in-app source list.
 
 ## Requirements
 
-### Requirement: Wayland öffnet den Desktop-Dialog
+### Requirement: Wayland opens the desktop dialog
 
-In einem verbundenen Gespräch unter Wayland MUST die App den ScreenCast-Dialog des Desktops öffnen. Sie MUST Quellen dort nicht selbst mit Vorschaubildern auflisten.
+In a connected call under Wayland the app MUST open the desktop ScreenCast dialog. It MUST NOT list sources itself with thumbnails.
 
-#### Scenario: Ganzer Bildschirm
+#### Scenario: Entire screen
 
-- **WHEN** der Nutzer unter Wayland den ganzen Bildschirm teilen wählt
-- **THEN** öffnet das Desktop einen Dialog nur für Monitore
-- **AND** die App zeigt keine eigene Quellenliste mit Vorschaubildern
+- **WHEN** the user chooses to share the entire screen under Wayland
+- **THEN** the desktop opens a dialog for monitors only
+- **AND** the app does not show its own thumbnail source list
 
-#### Scenario: Ein Fenster
+#### Scenario: A window
 
-- **WHEN** der Nutzer unter Wayland ein Fenster teilen wählt
-- **THEN** öffnet das Desktop einen Dialog nur für Fenster
+- **WHEN** the user chooses to share a window under Wayland
+- **THEN** the desktop opens a dialog for windows only
 
-#### Scenario: XWayland daneben
+#### Scenario: XWayland alongside
 
-- **WHEN** `WAYLAND_DISPLAY` gesetzt ist und zusätzlich ein X11-`DISPLAY` existiert
-- **THEN** öffnet Teilen denselben Desktop-Dialog wie ohne dieses `DISPLAY`
+- **WHEN** `WAYLAND_DISPLAY` is set and an X11 `DISPLAY` also exists
+- **THEN** share opens the same desktop dialog as without that `DISPLAY`
 
-#### Scenario: KDE, GNOME und Hyprland
+#### Scenario: KDE, GNOME, and Hyprland
 
-- **WHEN** der Nutzer auf KDE, GNOME oder Hyprland dieselbe Teilen-Art wählt
-- **THEN** erscheint der Dialog dieses Desktops für Monitore beziehungsweise Fenster
-- **AND** die App zeigt auf keinem der drei Desktops eine eigene Fensterliste
+- **WHEN** the user picks the same share kind on KDE, GNOME, or Hyprland
+- **THEN** that desktop’s dialog appears for monitors or windows
+- **AND** the app does not show its own window list on any of the three
 
-### Requirement: Teilen braucht unter Wayland keine Quellenliste
+### Requirement: Wayland share needs no prefilled source list
 
-In einem verbundenen Gespräch unter Wayland MUST der Nutzer beide Teilen-Aktionen erreichen, ohne dass die App zuvor Bildschirme oder Fenster aufgezählt hat.
+In a connected call under Wayland the user MUST reach both share actions without the app enumerating screens or windows first.
 
-#### Scenario: Verbunden ohne vorausgefüllte Liste
+#### Scenario: Connected without a prefilled list
 
-- **WHEN** ein Gespräch verbunden ist und die Sitzung Wayland ist
-- **THEN** kann der Nutzer ganzen Bildschirm und ein Fenster wählen
-- **AND** das Teilen-Steuerelement ist nicht deaktiviert, nur weil keine Quellenliste vorliegt
+- **WHEN** a call is connected and the session is Wayland
+- **THEN** the user can choose entire screen and a window
+- **AND** the share control is not disabled merely because no source list exists
 
-### Requirement: Bestehende Teilen-Optionen bleiben
+### Requirement: Existing share options remain
 
-Das Teilen-Menü unter Wayland MUST die bestehenden Optionen für Computer-Ton, Bewegungsoptimierung und die eigene Person über dem Inhalt weiter anbieten.
+The Wayland share menu MUST still offer computer sound, motion optimization, and showing the local person over content.
 
-#### Scenario: Menü vor dem Dialog
+#### Scenario: Menu before the dialog
 
-- **WHEN** der Nutzer unter Wayland das Teilen-Menü öffnet
-- **THEN** sind «Include computer sound», «Optimize for motion» und «Show me over my content» erreichbar
-- **AND** daneben stehen die zwei Aktionen für Bildschirm und Fenster
+- **WHEN** the user opens the share menu under Wayland
+- **THEN** «Include computer sound», «Optimize for motion», and «Show me over my content» are available
+- **AND** beside them are the two actions for screen and window
 
-### Requirement: Bestätigtes Teilen bleibt in der App steuerbar
+### Requirement: Confirmed share stays controllable in the app
 
-Nach Bestätigung einer Quelle im Desktop-Dialog MUST die App die lokale Freigabe anzeigen, und der Nutzer MUST sie beenden können, ohne das Gespräch zu verlassen.
+After the user confirms a source in the desktop dialog, the app MUST show local sharing and the user MUST be able to stop it without leaving the call.
 
-#### Scenario: Banner und Stopp
+#### Scenario: Banner and stop
 
-- **WHEN** der Nutzer im Desktop-Dialog eine Quelle bestätigt
-- **THEN** zeigt die App, dass lokal geteilt wird
-- **AND** der Nutzer kann das Teilen beenden und das Gespräch läuft weiter
+- **WHEN** the user confirms a source in the desktop dialog
+- **THEN** the app shows that local share is active
+- **AND** the user can stop sharing while the call continues
 
-### Requirement: Abbruch lässt das Gespräch
+### Requirement: Cancel leaves the call alone
 
-Bricht der Nutzer den Desktop-Dialog ab, MUST keine Freigabe starten und MUST das Gespräch verbunden bleiben.
+If the user cancels the desktop dialog, no share MUST start and the call MUST stay connected.
 
-#### Scenario: Dialog abgebrochen
+#### Scenario: Dialog cancelled
 
-- **WHEN** der Nutzer den Desktop-Dialog abbricht
-- **THEN** startet kein Teilen
-- **AND** das Gespräch bleibt verbunden
-- **AND** es erscheint keine Fehlermeldung
+- **WHEN** the user cancels the desktop dialog
+- **THEN** sharing does not start
+- **AND** the call stays connected
+- **AND** no error toast appears
 
-### Requirement: Fehlendes Portal ist sichtbar
+### Requirement: Missing portal is visible
 
-Kann die App den ScreenCast-Dialog nicht öffnen, MUST sie das in einem verbundenen Gespräch klar anzeigen.
+If the app cannot open the ScreenCast dialog, it MUST show that clearly in a connected call.
 
-#### Scenario: Portal fehlt
+#### Scenario: Portal missing
 
-- **WHEN** der Nutzer unter Wayland Teilen startet und kein ScreenCast-Portal erreichbar ist
-- **THEN** sieht der Nutzer einen klaren Hinweis
-- **AND** der Knopf wirkt nicht lediglich wie «noch nicht verbunden»
+- **WHEN** the user starts share under Wayland and no ScreenCast portal is available
+- **THEN** the user sees a clear notice
+- **AND** the control does not look merely like «not connected yet»
 
-### Requirement: Ganzer Bildschirm ohne eigenes Fenster
+### Requirement: Entire screen without our own window
 
-Teilt der Nutzer den ganzen Bildschirm, MUST das Hauptfenster der App nicht im geteilten Bild bleiben.
+When sharing the entire screen, the app main window MUST NOT remain in the shared picture.
 
-#### Scenario: Hauptfenster weicht
+#### Scenario: Main window steps aside
 
-- **WHEN** der Nutzer den ganzen Bildschirm teilt und der Desktop-Dialog bestätigt ist
-- **THEN** ist das Hauptfenster der App nicht Teil des geteilten Bildes
+- **WHEN** the user shares the entire screen and the desktop dialog is confirmed
+- **THEN** the app main window is not part of the shared picture
 
-### Requirement: Windows und reines X11 behalten die Liste
+### Requirement: Windows and plain X11 keep the list
 
-Auf Windows und in einer X11-Sitzung ohne Wayland MUST das Teilen-Menü Bildschirme und Fenster mit Vorschaubildern anbieten, und die Auswahl MUST das Teilen ohne Desktop-Portal-Dialog starten. Auf macOS MUST dieses Listen-Verhalten nicht gelten; dort gilt der ScreenCaptureKit-Dialog.
+On Windows and in an X11 session without Wayland, the share menu MUST offer screens and windows with thumbnails, and choosing a source MUST start share without a desktop portal dialog. On macOS that list behaviour MUST NOT apply; the ScreenCaptureKit dialog applies instead.
 
-#### Scenario: Liste auf Windows
+#### Scenario: List on Windows
 
-- **WHEN** der Nutzer auf Windows in einem verbundenen Gespräch Teilen öffnet
-- **THEN** zeigt das Menü Bildschirme und Fenster mit Vorschaubildern
-- **AND** die Auswahl einer Quelle startet das Teilen ohne Desktop-Portal-Dialog
+- **WHEN** the user opens share in a connected call on Windows
+- **THEN** the menu shows screens and windows with thumbnails
+- **AND** choosing a source starts share without a desktop portal dialog
 
-#### Scenario: Reines X11
+#### Scenario: Plain X11
 
-- **WHEN** die Sitzung X11 ist und `WAYLAND_DISPLAY` nicht gesetzt ist
-- **THEN** zeigt das Menü Bildschirme und Fenster mit Vorschaubildern
-- **AND** die Auswahl einer Quelle startet das Teilen ohne Desktop-Portal-Dialog
+- **WHEN** the session is X11 and `WAYLAND_DISPLAY` is unset
+- **THEN** the menu shows screens and windows with thumbnails
+- **AND** choosing a source starts share without a desktop portal dialog
 
-#### Scenario: macOS bleibt beim System-Dialog
+#### Scenario: macOS stays on the system dialog
 
-- **WHEN** der Nutzer auf macOS in einem verbundenen Gespräch Teilen öffnet
-- **THEN** zeigt das Menü keine Quellenliste mit Vorschaubildern
-- **AND** die Teilen-Aktion öffnet den ScreenCaptureKit-Dialog
+- **WHEN** the user opens share in a connected call on macOS
+- **THEN** the menu shows no thumbnail source list
+- **AND** the share action opens the ScreenCaptureKit dialog
 
 ### Requirement: Screen share start and stop reliability
+
 Starting screen share SHALL deliver a picture on Windows, and stopping share SHALL complete without hanging the call UI.
 
 #### Scenario: Windows share shows a picture
+
 - **WHEN** the user starts screen share on Windows in a connected call
 - **THEN** the remote side receives a share picture
 
 #### Scenario: Stop never hangs
+
 - **WHEN** the user stops screen share
 - **THEN** the stop completes and the call UI remains responsive
 
 ### Requirement: Call windows remain screenshot-visible
+
 Call, mini and gallery windows SHALL remain visible to the OS screenshot/capture path after share or overlay changes that previously hid them.
 
 #### Scenario: Screenshot includes call windows
+
 - **WHEN** the user captures the screen while a call window is open
 - **THEN** the call window content is included in the capture where the OS allows it
 
-### Requirement: macOS öffnet den ScreenCaptureKit-Dialog
+### Requirement: macOS opens the ScreenCaptureKit dialog
 
-In einem verbundenen Gespräch auf macOS MUST die App den ScreenCaptureKit-System-Dialog öffnen. Sie MUST Quellen dort nicht selbst mit Vorschaubildern auflisten.
+In a connected call on macOS the app MUST open the ScreenCaptureKit system dialog. It MUST NOT list sources itself with thumbnails.
 
-#### Scenario: Ganzer Bildschirm
+#### Scenario: Entire screen
 
-- **WHEN** der Nutzer auf macOS den ganzen Bildschirm teilen wählt
-- **THEN** öffnet das System einen Dialog für Monitore
-- **AND** die App zeigt keine eigene Quellenliste mit Vorschaubildern
+- **WHEN** the user chooses to share the entire screen on macOS
+- **THEN** the system opens a dialog for monitors
+- **AND** the app does not show its own thumbnail source list
 
-#### Scenario: Ein Fenster
+#### Scenario: A window
 
-- **WHEN** der Nutzer auf macOS ein Fenster teilen wählt
-- **THEN** öffnet das System einen Dialog für Fenster
+- **WHEN** the user chooses to share a window on macOS
+- **THEN** the system opens a dialog for windows
 
-### Requirement: Teilen braucht auf macOS keine Quellenliste
+### Requirement: macOS share needs no prefilled source list
 
-In einem verbundenen Gespräch auf macOS MUST der Nutzer beide Teilen-Aktionen erreichen, ohne dass die App zuvor Bildschirme oder Fenster aufgezählt hat.
+In a connected call on macOS the user MUST reach both share actions without the app enumerating screens or windows first.
 
-#### Scenario: Verbunden ohne vorausgefüllte Liste
+#### Scenario: Connected without a prefilled list
 
-- **WHEN** ein Gespräch verbunden ist und die Sitzung macOS ist
-- **THEN** kann der Nutzer ganzen Bildschirm und ein Fenster wählen
-- **AND** das Teilen-Steuerelement ist nicht deaktiviert, nur weil keine Quellenliste vorliegt
+- **WHEN** a call is connected and the session is macOS
+- **THEN** the user can choose entire screen and a window
+- **AND** the share control is not disabled merely because no source list exists
 
-### Requirement: Bestätigtes macOS-Teilen bleibt in der App steuerbar
+### Requirement: Confirmed macOS share stays controllable in the app
 
-Nach Bestätigung einer Quelle im ScreenCaptureKit-Dialog MUST die App die lokale Freigabe anzeigen, und der Nutzer MUST sie beenden können, ohne das Gespräch zu verlassen.
+After the user confirms a source in the ScreenCaptureKit dialog, the app MUST show local sharing and the user MUST be able to stop it without leaving the call.
 
-#### Scenario: Banner und Stopp
+#### Scenario: Banner and stop
 
-- **WHEN** der Nutzer im ScreenCaptureKit-Dialog eine Quelle bestätigt
-- **THEN** zeigt die App, dass lokal geteilt wird
-- **AND** der Nutzer kann das Teilen beenden und das Gespräch läuft weiter
+- **WHEN** the user confirms a source in the ScreenCaptureKit dialog
+- **THEN** the app shows that local share is active
+- **AND** the user can stop sharing while the call continues
 
-### Requirement: Abbruch des macOS-Dialogs lässt das Gespräch
+### Requirement: Cancel of the macOS dialog leaves the call alone
 
-Bricht der Nutzer den ScreenCaptureKit-Dialog ab, MUST keine Freigabe starten und MUST das Gespräch verbunden bleiben.
+If the user cancels the ScreenCaptureKit dialog, no share MUST start and the call MUST stay connected.
 
-#### Scenario: Dialog abgebrochen
+#### Scenario: Dialog cancelled
 
-- **WHEN** der Nutzer den ScreenCaptureKit-Dialog abbricht
-- **THEN** startet kein Teilen
-- **AND** das Gespräch bleibt verbunden
-- **AND** es erscheint keine Fehlermeldung
+- **WHEN** the user cancels the ScreenCaptureKit dialog
+- **THEN** sharing does not start
+- **AND** the call stays connected
+- **AND** no error toast appears
 
-### Requirement: Fehlende macOS-Freigabe ist sichtbar
+### Requirement: Missing macOS share is visible
 
-Kann die App den ScreenCaptureKit-Dialog nicht öffnen oder die Freigabe nicht starten, MUST sie das in einem verbundenen Gespräch klar anzeigen.
+If the app cannot open the ScreenCaptureKit dialog or start share, it MUST show that clearly in a connected call.
 
-#### Scenario: Freigabe fehlt
+#### Scenario: Share unavailable
 
-- **WHEN** der Nutzer auf macOS Teilen startet und der System-Dialog nicht verfügbar ist
-- **THEN** sieht der Nutzer einen klaren Hinweis
-- **AND** der Knopf wirkt nicht lediglich wie «noch nicht verbunden»
+- **WHEN** the user starts share on macOS and the system dialog is unavailable
+- **THEN** the user sees a clear notice
+- **AND** the control does not look merely like «not connected yet»

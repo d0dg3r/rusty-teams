@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Chat zeigt Message-Erscheinen, Typing im Thread, Out-of-office Notice und einen Start-Splash mit Fortschritt.
+Chat shows message appear animation, typing in the thread, out-of-office notice, and a startup splash with progress.
 
 ## Requirements
 

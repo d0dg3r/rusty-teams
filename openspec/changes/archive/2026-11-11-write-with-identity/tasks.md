@@ -1,22 +1,22 @@
 # Tasks
 
-## 1. Writer-Resolver und Chat-Thread
+## 1. Writer resolver and chat thread
 
-- [x] 1.1 Gemeinsame Auflösung von «Write with» (Chat-Profil oder Microsoft) für App-UI bereitstellen und mit `cargo test -p app --lib` bzw. einem gezielten Unit-Test für leeres/`write_with`-Profil verifizieren
-- [x] 1.2 Thread-Text für einen offenen Chat bauen (max. 20 nicht gelöschte Nachrichten, Sender analog `message_context`) und Unit-Test in `app-state` oder `agents` grün halten (`cargo test -p app-state --lib` bzw. passender Filter)
+- [x] 1.1 Provide shared resolution of «Write with» (chat profile or Microsoft) for app UI and verify with `cargo test -p app --lib` or a focused unit test for empty/`write_with` profile
+- [x] 1.2 Build thread text for an open chat (max 20 non-deleted messages, senders like `message_context`) and keep unit test in `app-state` or `agents` green (`cargo test -p app-state --lib` or matching filter)
 
-## 2. Composer-Branding
+## 2. Composer branding
 
-- [x] 2.1 In `crates/app/src/views/composer/rewrite.rs` Working-/Failed-/Empty-/Text-only-Strings und Button-Icon an den lokalen Writer-Namen koppeln; Microsoft-Pfad unverändert lassen — verifizieren durch Review der Strings und `cargo test -p app --lib` falls vorhandene Rewrite-Tests greifen
-- [x] 2.2 Settings-Hinweis unter «Write with» so anpassen, dass Rewrite und Chat-Insel erwähnt werden; manuell im Settings-Dialog prüfen
+- [x] 2.1 In `crates/app/src/views/composer/rewrite.rs` tie working/failed/empty/text-only strings and button icon to local writer name; leave Microsoft path unchanged — verify by string review and `cargo test -p app --lib` if rewrite tests exist
+- [x] 2.2 Adjust settings hint under «Write with» to mention rewrite and chat island; check manually in settings dialog
 
-## 3. Chat-Insel: Branding und lokaler Ask
+## 3. Chat island: branding and local ask
 
-- [x] 3.1 In `copilot.rs` und `chat_header_actions.rs` Titel, Tooltips, Placeholder, Working/Failed und Logo/Icon dynamisch aus dem Writer ableiten — verifizieren: mit lokalem Profil kein `copilot_color.svg` als Identitätsmarke
-- [x] 3.2 Insel-Ask bei lokalem Writer über `complete_text` mit Thread+Frage; ohne Engine erreichbar; bei leerem `write_with` weiter `ask_copilot` — verifizieren mit gezieltem Test oder manuellem Smoke (lokales Profil vs. Microsoft)
-- [x] 3.3 Integration: `cargo test -p agents --lib` und `cargo test -p app-state --lib` (oder engere Filter) grün; kurzer Smoke: Write with → Ollama/OpenAI-Profil → Insel-Frage und Composer-Rewrite zeigen Profilname
+- [x] 3.1 In `copilot.rs` and `chat_header_actions.rs` derive title, tooltips, placeholder, working/failed, and logo/icon from writer — verify: with local profile no `copilot_color.svg` as identity mark
+- [x] 3.2 Island ask with local writer via `complete_text` with thread+question; reachable without engine; with empty `write_with` still `ask_copilot` — verify with focused test or manual smoke (local profile vs Microsoft)
+- [x] 3.3 Integration: `cargo test -p agents --lib` and `cargo test -p app-state --lib` (or tighter filters) green; short smoke: Write with → Ollama/OpenAI profile → island question and composer rewrite show profile name
 
 ## Workflow follow-up
 
-- Archive nach Review und Merge der Spec-Deltas in `openspec/specs/agent-providers`
-- Alltagskomits nach `fork` pushen, nicht nach `origin`
+- Archive after review and merge spec deltas into `openspec/specs/agent-providers`
+- Push everyday commits to `fork`, not `origin`

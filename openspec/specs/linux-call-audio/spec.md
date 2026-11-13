@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Auf Linux hört die Gegenseite dasselbe Mikrofon wie in Teams im Browser: Auto und Low senden über den Pulse-ADM-Pfad. Music-Mode, Off und Computer-Sound nutzen die Software-Kette. Auflegen darf den Client nicht abstürzen oder hängen lassen.
+On Linux the remote party hears the same microphone as Teams in the browser: Auto and Low send over the Pulse ADM path. Music Mode, Off, and computer sound use the software chain. Hanging up must not crash or hang the client.
 
 ## Requirements
 

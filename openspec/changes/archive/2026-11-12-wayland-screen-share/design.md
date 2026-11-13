@@ -2,80 +2,80 @@
 
 ## Context
 
-Siehe `proposal.md` für den Anlass. Heute zählt `crates/calling/src/screen.rs` Bildschirme und Fenster über `GetSourceList` und baut daraus das Menü in `crates/app/src/views/call_view.rs`. `can_share()` in `crates/app-call-model/src/model.rs` ist nur wahr, wenn diese Liste nicht leer ist. Vorschaubilder rufen `capture_frame` auf, bevor der Nutzer etwas gewählt hat.
+See `proposal.md` for motivation. Today `crates/calling/src/screen.rs` enumerates screens and windows via `GetSourceList` and builds the menu in `crates/app/src/views/call_view.rs`. `can_share()` in `crates/app-call-model/src/model.rs` is true only when that list is non-empty. Thumbnails call `capture_frame` before the user picks anything.
 
-Die mitgelieferte Libwebrtc ist mit `WEBRTC_USE_PIPEWIRE` gebaut. `vendor/webrtc-sys/src/desktop_capturer.cpp` setzt `allow_pipewire`. `BaseCapturerPipeWire` implementiert `GetDelegatedSourceListController`, `EnsureVisible` und `Observe`. Die cxx-Bindung in `vendor/webrtc-sys` reicht diesen Controller nicht durch. Der GLib-Loop startet in `vendor/libwebrtc/src/native/desktop_capturer.rs` erst in `start()`, und nur wenn `WAYLAND_DISPLAY` gesetzt ist.
+Bundled libwebrtc is built with `WEBRTC_USE_PIPEWIRE`. `vendor/webrtc-sys/src/desktop_capturer.cpp` sets `allow_pipewire`. `BaseCapturerPipeWire` implements `GetDelegatedSourceListController`, `EnsureVisible`, and `Observe`. The cxx binding in `vendor/webrtc-sys` does not pass this controller through. The GLib loop in `vendor/libwebrtc/src/native/desktop_capturer.rs` starts only in `start()`, and only when `WAYLAND_DISPLAY` is set.
 
-Unter Wayland ist `GetSourceList` eine delegierte Liste: höchstens ein Platzhalter, brauchbar erst nach der Auswahl im Desktop-Dialog.
+Under Wayland `GetSourceList` is a delegated list: at most one placeholder, usable only after selection in the desktop dialog.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Ein Portal-Pfad für KDE, GNOME und Hyprland, ausgelöst von zwei Menüaktionen.
-- Windows und reines X11 behalten Liste und Vorschaubilder.
-- Abbruch, fehlendes Portal und das Weichen des Hauptfensters beim ganzen Bildschirm sind im bestehenden Call-Ablauf angeschlossen.
+- One portal path for KDE, GNOME, and Hyprland, triggered by two menu actions.
+- Windows and plain X11 keep list and thumbnails.
+- Cancel, missing portal, and moving the main window on entire-screen share hook into the existing call flow.
 
 **Non-Goals:**
 
-- Restore-Token, Vorschaubilder unter Wayland, Regionswahl, Computer-Ton (`linux-call-audio`, `parec`).
-- Compositor-private Listen.
-- Upstream-PR. Die Bindungsänderung bleibt auf dem Fork.
+- Restore token, thumbnails under Wayland, region pick, computer sound (`linux-call-audio`, `parec`).
+- Compositor-private lists.
+- Upstream PR. Binding change stays on the fork.
 
 ## Decisions
 
-### Sitzung über `WAYLAND_DISPLAY`
+### Session via `WAYLAND_DISPLAY`
 
-Portal-Pfad genau dann, wenn `WAYLAND_DISPLAY` gesetzt ist, auch neben `DISPLAY` für XWayland. Dieselbe Bedingung nutzt Libwebrtc für den PipeWire-Capturer. `XDG_SESSION_TYPE` allein würde vom Capturer abweichen.
+Portal path exactly when `WAYLAND_DISPLAY` is set, even beside `DISPLAY` for XWayland. Libwebrtc uses the same condition for the PipeWire capturer. `XDG_SESSION_TYPE` alone would diverge from the capturer.
 
-Die Call-Task meldet den Modus einmal als Update (Portal oder Liste). Das Modell speichert ihn. `can_share()` ist im Portal-Modus wahr, sobald das Gespräch verbunden ist, auch bei leerer `share_sources`.
+The call task reports the mode once as an update (portal or list). The model stores it. `can_share()` in portal mode is true once the call is connected, even with an empty `share_sources`.
 
-### Zwei Aktionen, zwei Capturer-Arten
+### Two actions, two capturer kinds
 
-«Ganzen Bildschirm» erzeugt einen Screen-Capturer, «Ein Fenster» einen Window-Capturer. WebRTC mappt das auf die Portal-Typen Monitor und Fenster. `CreateGenericCapturer` würde beide Arten in einem Dialog mischen und die zwei Aktionen aufheben.
+«Entire screen» creates a screen capturer, «A window» a window capturer. WebRTC maps that to portal types monitor and window. `CreateGenericCapturer` would mix both kinds in one dialog and undo the two actions.
 
-`StartShare(ShareSource)` bleibt für die Listen-Auswahl. Für den Portal-Weg kommt ein eigener Befehl mit der Art (Bildschirm oder Fenster), ohne vorherige Quellen-Id. Kein Platzhalter-Eintrag in `share_sources`, sonst lösen Vorschaubilder in `crates/calling/src/call.rs` den Dialog beim Öffnen des Menüs aus.
+`StartShare(ShareSource)` stays for list selection. Portal path gets its own command with kind (screen or window), no prior source id. No placeholder entry in `share_sources`, or thumbnails in `crates/calling/src/call.rs` fire the dialog when opening the menu.
 
-### Dialog über den delegierten Controller
+### Dialog via delegated controller
 
-Ablauf nach dem Klick:
+Flow after click:
 
 ```
-GLib-Default-Context läuft
+GLib default context running
         |
         v
-Capturer Start(callback)     ohne SelectSource
+Capturer Start(callback)     without SelectSource
         |
         v
 Observe + EnsureVisible
         |
-        +-- Auswahl --> GetSourceList, SelectSource, bisherige Frame-Schleife
-        +-- Abbruch --> Capturer weg, kein Notice
-        +-- Fehler  --> CallUpdate::Notice, kein Teilen
+        +-- selection --> GetSourceList, SelectSource, existing frame loop
+        +-- cancel     --> drop capturer, no Notice
+        +-- error      --> CallUpdate::Notice, no share
 ```
 
-`EnsureVisible` ist Pflicht: `BaseCapturerPipeWire` hängt den Portal-Dialog daran. Die Bindung in `vendor/webrtc-sys/include/livekit/desktop_capturer.h` und `vendor/libwebrtc` bekommt Observe, EnsureVisible und die drei Rückrufe. Dünn halten, damit ein Libwebrtc-Bump überschaubar bleibt.
+`EnsureVisible` is required: `BaseCapturerPipeWire` attaches the portal dialog there. Binding in `vendor/webrtc-sys/include/livekit/desktop_capturer.h` and `vendor/libwebrtc` gets Observe, EnsureVisible, and the three callbacks. Keep thin so a libwebrtc bump stays manageable.
 
-Der GLib-Loop ist einer für den Prozess, auf dem Default-Context, gestartet bevor `Start` oder `EnsureVisible` läuft, und am Leben solange ein Portal-Teilen möglich ist. Pro Capturer einen Loop zu starten und beim Drop zu beenden reisst die Portal-Session ab. Rückrufe des Controllers laufen auf dem Loop-Thread und wechseln auf den bestehenden Capture-Besitzer, bevor die Frame-Schleife blockiert. Der Loop selbst wird nicht gejoint.
+One GLib loop per process on the default context, started before `Start` or `EnsureVisible`, alive while portal share is possible. Starting and stopping a loop per capturer tears down the portal session. Controller callbacks run on the loop thread and hop to the existing capture owner before the frame loop blocks. The loop itself is not joined.
 
-### Hauptfenster beim ganzen Bildschirm
+### Main window on entire screen
 
-`SetExcludedWindow` und `sync_capture_exclusion` in `crates/app/src/call/overlay.rs` wirken auf PipeWire nicht: der Compositor liefert das fertige Bild. `minimize_for_share` minimiert nur, wenn `minimize_on_share_start` in `crates/app-state/src/call/share_overlay.rs` Überlappung sieht. Globale Rechtecke gibt Wayland nicht her.
+`SetExcludedWindow` and `sync_capture_exclusion` in `crates/app/src/call/overlay.rs` do not apply on PipeWire: the compositor delivers the finished image. `minimize_for_share` minimizes only when `minimize_on_share_start` in `crates/app-state/src/call/share_overlay.rs` sees overlap. Wayland does not expose global rects.
 
-Beim Portal-Bildschirm gilt Minimieren immer, unabhängig von Rechtecken. Fenster-Teilen minimiert nicht; das gewählte Fenster ist die Aufnahme.
+Portal entire-screen always minimizes, regardless of rects. Window share does not minimize; the chosen window is the capture.
 
-### Hinweis, wenn das Portal fehlt
+### Notice when portal is missing
 
-Schlägt das Erzeugen des Capturers oder `EnsureVisible` fehl, geht der Text über `CallUpdate::Notice`. Der bestehende Tooltip «Sharing starts once the call is connected» bleibt dem unverbundenen Gespräch vorbehalten.
+If capturer creation or `EnsureVisible` fails, text goes through `CallUpdate::Notice`. Existing tooltip «Sharing starts once the call is connected» stays for unconnected calls.
 
 ## Risks / Trade-offs
 
-- [Portal ignoriert den Typ-Filter und zeigt Monitore und Fenster zusammen] → Anfrage bleibt Screen- oder Window-Capturer. Prüfen auf diesem Hyprland. Keine zweite Liste in der App bauen.
-- [Frames bleiben schwarz, DMA-BUF kommt nicht als CPU-Bild an] → Manuell auf Hyprland gegenprüfen. Die bestehende Umwandlung nach I420 in `screen.rs` erwartet befüllte Frame-Bytes. Leere Frames werden nicht als erfolgreiches Teilen gemeldet.
-- [Portal-Aufruf vom falschen Thread] → Loop zuerst, Default-Context, `Start` und `EnsureVisible` erst danach.
-- [Mehrere Portal-Implementierungen installiert] → Die App wählt die Implementierung nicht. Das Desktop routet ScreenCast (hier `hyprland-portals.conf` mit `default=hyprland;gtk`).
-- [Bindung bricht beim nächsten Libwebrtc-Bump] → Nur Controller-Rückrufe ergänzen, keine Kopie der Portal-Logik.
+- [Portal ignores type filter and shows monitors and windows together] → Request stays screen- or window-capturer. Verify on this Hyprland. Do not build a second in-app list.
+- [Frames stay black, DMA-BUF does not arrive as CPU image] → Manual check on Hyprland. Existing I420 conversion in `screen.rs` expects filled frame bytes. Empty frames must not count as successful share.
+- [Portal call from wrong thread] → Loop first, default context, `Start` and `EnsureVisible` only after.
+- [Multiple portal implementations installed] → App does not pick implementation. Desktop routes ScreenCast (here `hyprland-portals.conf` with `default=hyprland;gtk`).
+- [Binding breaks on next libwebrtc bump] → Add controller callbacks only, no copy of portal logic.
 
 ## Migration Plan
 
-Kein gespeicherter Zustand. Rückbau ist der Commit. Laufzeit vorausgesetzt: PipeWire und ein ScreenCast-Portal des Desktops. `README.md` erwähnt bei Linux-Teilen das Portal in einem Satz. Lieferung nur auf `fork`.
+No persisted state. Rollback is the commit. Runtime expects PipeWire and a desktop ScreenCast portal. `README.md` mentions the portal for Linux share in one sentence. Delivery on `fork` only.

@@ -2,33 +2,33 @@
 
 ## Why
 
-Die gesamte App-Oberfläche ist heute englisch hardcodiert. Nutzer mit deutscher Systemsprache und der Fork-Zielgruppe brauchen eine durchgängig deutschsprachige UI, ohne die englische Basis und Upstream-Kompatibilität zu verlieren. Message-Translation und Caption-Sprachen existieren schon; die App-UI-Sprache fehlt.
+The whole app chrome is hardcoded English today. Users with German system locale and the fork audience need a consistently German UI without losing the English baseline and upstream compatibility. Message translation and caption languages already exist; app UI language is missing.
 
 ## What Changes
 
-- Die App bietet zwei UI-Sprachen: Englisch und Deutsch (Deutschland-Orthografie im Produktkatalog).
-- Beim ersten Start folgt die UI der OS-Locale: System-Locale `de*` → Deutsch, sonst Englisch.
-- Nutzer können die UI-Sprache in den Einstellungen dauerhaft überschreiben; die Wahl wird gespeichert und gilt beim nächsten Start.
-- Umschalten aktualisiert sichtbare UI-Texte ohne Neustart, soweit die Texte zur Laufzeit aufgelöst werden.
-- Alle produktseitigen UI-Texte sind lokalisiert: Navigation, Settings, Dialoge, Menüs, Tooltips, Shortcuts, Toasts, Tray, Agent-UI und Call-/Fehler-Hinweise.
-- Call- und ähnliche Nutzerhinweise tragen stabile Schlüssel; der Anzeigetext entsteht erst an der UI-Grenze in der aktiven Locale.
-- Fehlende Übersetzungen fallen auf Englisch zurück statt leerer oder roher Keys.
-- Unverändert ausserhalb: Chat-/Server-Inhalte, Adaptive Cards vom Server, Geräte-Namen vom OS, Wire-Protokoll-Strings, Captions-Spoken-Language, bestehende Message-Translation.
+- The app offers two UI languages: English and German (Germany orthography in the product catalog).
+- On first launch the UI follows OS locale: system locale `de*` → German, else English.
+- Users can override UI language permanently in settings; the choice is stored and applies on the next start.
+- Switching updates visible UI text without restart where strings resolve at runtime.
+- All product-side UI strings are localized: navigation, settings, dialogs, menus, tooltips, shortcuts, toasts, tray, agent UI, and call/error notices.
+- Call and similar user notices carry stable keys; display text is produced at the UI boundary in the active locale.
+- Missing translations fall back to English instead of empty or raw keys.
+- Unchanged outside scope: chat/server content, Adaptive Cards from server, OS device names, wire protocol strings, captions spoken language, existing message translation.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `ui-locale`: UI-Sprache der App wählen, aus OS-Locale ableiten, persistieren und auf die gesamte App-Oberfläche anwenden (Englisch und Deutsch).
+- `ui-locale`: choose app UI language, derive from OS locale, persist, and apply across the whole app chrome (English and German).
 
 ### Modified Capabilities
 
-- Keine. Message-Translation und Caption-Sprachen bleiben eigene, unveränderte Verhaltensbereiche.
+- None. Message translation and caption languages stay separate, unchanged behaviour areas.
 
 ## Impact
 
-- UI-Crate (`crates/app` und verwandte Views), Persistenz analog Appearance/Settings-Meta, Tray- und Toast-Texte.
-- Call-Hinweise und vergleichbare Nutzertexte in `crates/calling` / `app-state`: Umstellung von englischen Literalen auf stabile Hinweis-IDs, Auflösung in der UI.
-- Katalog und Locale-Laufzeit analog dem bestehenden `rust-i18n`-Muster in `vendor/gpui-component` (eigener App-Katalog, Vendor-YAML nicht mischen).
-- Layout-/UI-Tests, die englische sichtbare Strings erwarten, müssen locale-bewusst werden oder gegen Keys/IDs prüfen.
-- Lieferung auf dem Fork (`origin` Forgejo). Kein Riesen-PR der ganzen i18n-Welle an Upstream; Infrastruktur kann später als eigene Scheibe angeboten werden.
+- UI crate (`crates/app` and related views), persistence like appearance/settings meta, tray and toast text.
+- Call notices and similar user text in `crates/calling` / `app-state`: move from English literals to stable notice IDs, resolve in the UI.
+- Catalog and locale runtime like existing `rust-i18n` pattern in `vendor/gpui-component` (own app catalog, do not mix vendor YAML).
+- Layout/UI tests that expect English visible strings must become locale-aware or assert keys/IDs.
+- Delivery on fork (`origin` Forgejo). No giant upstream PR of the whole i18n wave; infrastructure can be offered later as its own slice.

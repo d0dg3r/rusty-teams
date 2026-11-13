@@ -2,34 +2,34 @@
 
 ## Context
 
-`open_picked_format` startete mit `Closest(NV12 1080p)`. Auf dem C930e gibt es kein NV12; nokhwa landet bei YUYV 1080p@5. `compatible_camera_formats` scheitert oft (`Failed to Fufill`), daher bleibt der 5-fps-Stream. MJPEG 1080p@30 und 720p@30 existieren auf dem Gerät, wurden aber aus `pick_format` ausgeschlossen (`DIRECT_FORMATS = NV12|YUYV`).
+`open_picked_format` started with `Closest(NV12 1080p)`. On the C930e there is no NV12; nokhwa lands on YUYV 1080p@5. `compatible_camera_formats` often fails (`Failed to Fufill`), so the 5-fps stream remains. MJPEG 1080p@30 and 720p@30 exist on the device but were excluded from `pick_format` (`DIRECT_FORMATS = NV12|YUYV`).
 
 ## Goals / Non-Goals
 
 **Goals**
 
-- Nie unter 30 fps öffnen, wenn das Gerät 30 fps in irgendeinem nutzbaren Format anbietet.
-- MJPEG 1080p/720p als bevorzugter HD-Pfad auf USB-2.0-Kameras.
-- Schneller Decode MJPEG → I420 mit wiederverwendeten Buffers.
-- Messbarkeit im Call-Report.
+- Never open below 30 fps when the device offers 30 fps in any usable format.
+- MJPEG 1080p/720p as preferred HD path on USB 2.0 cameras.
+- Fast decode MJPEG → I420 with reused buffers.
+- Measurability in the call report.
 
 **Non-Goals**
 
-- NVENC/VAAPI-Encoder in diesem Durchgang.
-- Receive-/Render-Pfad-Optimierung, bevor eigene Capture-fps stimmen.
+- NVENC/VAAPI encoder in this pass.
+- Receive/render path optimization before own capture fps is correct.
 
 ## Decisions
 
-1. **Exact-Kandidaten mit fps-Gate:** Nach jedem Open `frame_rate() >= 30` prüfen; sonst nächster Kandidat (MJPG HD → Raw 30 fps → AbsoluteHighest).
-2. **MJPEG in `pick_format`:** Bei gleicher Auflösung und 30 fps bleibt Raw (NV12 > YUYV) bevorzugt; sonst MJPEG.
-3. **Decode:** `zune-jpeg` → RGBA → `abgr_to_i420`; nokhwa-`decode_image` nur für andere Formate.
-4. **UVC:** `exposure_dynamic_framerate=0`, `power_line_frequency=50` best effort, Fehler nur loggen.
+1. **Exact candidates with fps gate:** After each open check `frame_rate() >= 30`; else next candidate (MJPG HD → raw 30 fps → AbsoluteHighest).
+2. **MJPEG in `pick_format`:** At same resolution and 30 fps raw (NV12 > YUYV) stays preferred; else MJPEG.
+3. **Decode:** `zune-jpeg` → RGBA → `abgr_to_i420`; nokhwa `decode_image` only for other formats.
+4. **UVC:** `exposure_dynamic_framerate=0`, `power_line_frequency=50` best effort, log errors only.
 
 ## Risks / Trade-offs
 
-- MJPEG-Decode kostet CPU; bei 1080p@30 muss < ~15 ms/Frame bleiben — sonst Capture weiter senken (720p) als Fallback.
-- AbsoluteHighest kann wieder Property-Fails auslösen — nur letzter Ausweg.
+- MJPEG decode costs CPU; at 1080p@30 must stay < ~15 ms/frame — else lower capture (720p) as fallback.
+- AbsoluteHighest can trigger property fails again — last resort only.
 
 ## Migration
 
-Keine Datenmigration. Nach Release App neu starten; Call-Report prüfen auf `MJPG … @30` und ~30 encodierte Frames/s.
+No data migration. After release restart the app; check call report for `MJPG … @30` and ~30 encoded frames/s.

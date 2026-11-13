@@ -1,19 +1,19 @@
 # Tasks
 
-## 1. Scroll-Ziel und Follow-Zustand
+## 1. Scroll target and follow state
 
-- [x] 1.1 Feste 08:00-Scroll-Logik durch Offset aus lokaler Uhrzeit (+ Viewport-Bias, Clamp) ersetzen; Verify: Unit-Test für Offset-Hilfsfunktion (Stunde/Minute → Pixel) in `crates/app` oder extrahiertem Modul — `cargo test -p app --lib` mit Filter auf den Hilfsnamen
-- [x] 1.2 `follow_now` einführen: an bei Öffnen Tag/Woche und Today, aus nach erkanntem manuellem Scroll; programmatisches `set_offset` darf Follow nicht beenden; Verify: Unit-Tests für Zustandsübergänge (an → manuell aus → Today wieder an)
+- [x] 1.1 Replace fixed 08:00 scroll with offset from local time (+ viewport bias, clamp); Verify: unit test for offset helper (hour/minute → pixels) in `crates/app` or extracted module — `cargo test -p app --lib` filtered to helper name
+- [x] 1.2 Introduce `follow_now`: on when opening day/week and Today, off after detected manual scroll; programmatic `set_offset` must not end follow; Verify: unit tests for state transitions (on → manual off → Today on again)
 
-## 2. Now-Linie und Timer
+## 2. Now line and timer
 
-- [x] 2.1 Periodischen Takt in `CalendarView` solange Tag/Woche sichtbar: Now-Linie neu zeichnen; bei `follow_now` Viewport nachziehen; bei Monat/unsichtbar Timer stoppen; Verify: manuelles Smoke (Linie wandert ohne Kalender-Poll) + bestehende Calendar-Layout-Guards grün wo vorhanden
+- [x] 2.1 Periodic tick in `CalendarView` while day/week visible: redraw now line; when `follow_now` pull viewport; stop timer on month/hidden; Verify: manual smoke (line moves without calendar poll) + existing calendar layout guards green where present
 
 ## 3. Integration
 
-- [x] 3.1 «Today» und Öffnen der Calendar-Insel triggern Align-to-now; Monat unverändert; Verify: kurzes Smoke-Protokoll (öffenen, scrollen, Today, Monat) und `cargo test -p app --lib` für neue Hilfs-/State-Tests
+- [x] 3.1 Today and opening calendar island trigger align-to-now; month unchanged; Verify: short smoke (open, scroll, Today, month) and `cargo test -p app --lib` for new helper/state tests
 
 ## Workflow follow-up
 
-- Nach Merge auf dem Fork: `/opsx-archive` für `calendar-scroll-now`.
-- Unabhängig von `google-calendar` umsetzen und releasen.
+- After merge on the fork: `/opsx-archive` for `calendar-scroll-now`.
+- Implement and release independently of `google-calendar`.

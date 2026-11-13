@@ -2,17 +2,20 @@
 
 ## Purpose
 
-Lokaler Kamera-Start in Gesprächen und Prejoin, wenn das Gerät Formate liefert, die Property-Abfrage aber fehlschlägt.
+Local camera start in calls and prejoin when the device offers formats but property queries fail.
 
 ## ADDED Requirements
 
-### Requirement: Format-Property-Fehler blockiert den Open nicht
-Schlägt die Abfrage der unterstützten Kamera-Formate oder der laufenden Format-Property fehl, MUST die App den Stream trotzdem mit einem Rohformat (etwa NV12 oder YUYV) bzw. dem bestehenden Fallback öffnen, sofern das Gerät das erlaubt. Nur wenn kein Fallback-Open gelingt, MUST die App dem Nutzer den Fehler anzeigen.
+### Requirement: Format property failure does not block open
 
-#### Scenario: Property fehlgeschlagen, Rohformat verfügbar
-- **WHEN** der Nutzer die Kamera einschaltet und die Format-Property fehlschlägt, das Gerät aber ein Rohformat bei der gewünschten Rate anbietet
-- **THEN** startet die lokale Kamera und zeigt keinen fatalen Format-Property-Stop
+If querying supported camera formats or the running format property fails, the app MUST still open the stream with a raw format (e.g. NV12 or YUYV) or the existing fallback when the device allows it. Only when no fallback open succeeds MUST the app show the user the error.
 
-#### Scenario: Kein Fallback möglich
-- **WHEN** weder Formatliste noch Fallback-Open ein Rohformat liefern
-- **THEN** bleibt die Kamera aus und die App zeigt den Fehler klar an
+#### Scenario: Property failed, raw format available
+
+- **WHEN** the user turns the camera on and the format property fails but the device offers a raw format at the desired rate
+- **THEN** local camera starts and does not show a fatal format-property stop
+
+#### Scenario: No fallback possible
+
+- **WHEN** neither format list nor fallback open yields a raw format
+- **THEN** the camera stays off and the app shows the error clearly

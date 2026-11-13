@@ -2,63 +2,63 @@
 
 ## Context
 
-Siehe `proposal.md` — Why. Heute: `CAPTURE_HEIGHT = 720`, Preferenz exakt 720, Downscale-Decke 1080 aber `fit_widescreen` kürzt wieder auf 720; Stage-Receive `max-fs=3600` (~720p); Screen schon `8160` (~1080p). Codec-Filter bleibt H.264 (`h264_only`).
+See `proposal.md` — Why. Today: `CAPTURE_HEIGHT = 720`, preference fixed at 720, downscale ceiling 1080 but `fit_widescreen` trims back to 720; stage receive `max-fs=3600` (~720p); screen already `8160` (~1080p). Codec filter stays H.264 (`h264_only`).
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Eine Qualitaetsstufe steuert Capture-Decke, Send-Advertise und Stage-Receive gemeinsam.
-- 1080p als praktisches Maximum; Auto faellt sauber auf 720p zurueck.
-- Bestehende Small-Tile- und Screen-Share-Limits unangetastet.
+- One quality tier drives capture ceiling, send advertise, and stage receive together.
+- 1080p as practical maximum; Auto falls back cleanly to 720p.
+- Existing small-tile and screen-share limits untouched.
 
 **Non-Goals:**
 
-- 4K-UI oder 4K-Advertise.
+- 4K UI or 4K advertise.
 - H.265 / AV1.
-- Mixer-Bitrate erzwingen jenseits der Teams-`controlVideoStreaming`-Antworten.
-- Aenderung am Screen-Share-Capture-Pfad.
+- Forcing mixer bitrate beyond Teams `controlVideoStreaming` responses.
+- Change to the screen-share capture path.
 
 ## Decisions
 
-### 1. Eine Einstellung fuer Capture + Advertise + Stage
+### 1. One setting for capture + advertise + stage
 
-**Wahl:** `VideoQuality { Auto, P720, P1080 }` wirkt auf alle drei.
+**Choice:** `VideoQuality { Auto, P720, P1080 }` affects all three.
 
-**Warum:** Getrennte «Senden»/«Empfangen»-Regler verdoppeln UI und erklaeren selten den wahrgenommenen Weichzeichner. Stage und Eigenbild sollen dieselbe Erwartung teilen.
+**Why:** Separate send/receive sliders duplicate UI and rarely explain perceived softness. Stage and self-view should share the same expectation.
 
-**Alternative:** Nur Capture aendern — abgelehnt, weil Stage weiter 720p anfordert.
+**Alternative:** Change capture only — rejected because stage would still request 720p.
 
-### 2. Konstanten an Macroblock-Budgets koppeln
+### 2. Tie constants to macroblock budgets
 
-**Wahl:** 720p-Stage bleibt `max-fs=3600` / heutige `max-mbps`/`max-fps`; 1080p-Stage uebernimmt die heutigen Screen-`ReceiveLimits` (`8160` / `135_000` / `1500` fps-Einheiten) oder eine bewusst dokumentierte 1080p-Kamera-Variante mit gleichem `max-fs`, falls Screen-FPS zu niedrig fuer Kamera wirkt — dann `max-fps` bei 1080p-Stage auf Kameraniveau (~3000) halten und `max-mbps` proportional anheben.
+**Choice:** 720p stage keeps `max-fs=3600` / today’s `max-mbps`/`max-fps`; 1080p stage takes today’s screen `ReceiveLimits` (`8160` / `135_000` / `1500` fps units) or a documented 1080p camera variant with the same `max-fs` if screen FPS is too low for camera — then keep `max-fps` for 1080p stage at camera level (~3000) and raise `max-mbps` proportionally.
 
-**Empfehlung im Apply:** `max-fs=8160`, `max-fps=3000`, `max-mbps` so skalieren, dass 1080p@30 in Macroblock·FPS passt (≈ `8160 * 30` = 244800), nicht blind Screen-1500-FPS kopieren.
+**Apply recommendation:** `max-fs=8160`, `max-fps=3000`, scale `max-mbps` so 1080p@30 fits macroblock·FPS (≈ `8160 * 30` = 244800), do not blindly copy screen 1500 FPS.
 
-### 3. Capture-API parametrisieren
+### 3. Parameterize capture API
 
-**Wahl:** Preferenz-Hoehe und Downscale-Decke aus der aktiven Qualitaet ableiten statt hartem `CAPTURE_HEIGHT`. `pick_format` / `fit_widescreen` / Fallback-`Resolution` lesen dieselbe Decke. `LARGEST_DOWNSCALED_HEIGHT` fuer 1080-Ceiling darf hoehere Sensorformate bis z. B. 1440 zulassen, solange das Ergebnis auf ≤1080 skaliert — kein 4K-Modus in der UI.
+**Choice:** Derive preference height and downscale ceiling from active quality instead of hard `CAPTURE_HEIGHT`. `pick_format` / `fit_widescreen` / fallback `Resolution` read the same ceiling. `LARGEST_DOWNSCALED_HEIGHT` for 1080 ceiling may allow higher sensor formats up to e.g. 1440 as long as the result scales to ≤1080 — no 4K mode in the UI.
 
-### 4. Persistenz und UI-Ort
+### 4. Persistence and UI placement
 
-**Wahl:** Persistenz neben bestehenden Geraete-/Call-Settings; Auswahl im Kamera-Menue (Call + Prejoin), Labels «Auto», «720p», «1080p». Default `Auto`. Wechsel im Call: Kamera-Track neu oeffnen wenn noetig; Stage-Subscriptions die Limits neu posten (`applyChannelParameters`).
+**Choice:** Persist beside existing device/call settings; choice in camera menu (call + prejoin), labels «Auto», «720p», «1080p». Default `Auto`. Change in call: reopen camera track if needed; stage subscriptions repost limits (`applyChannelParameters`).
 
-### 5. Codec unveraendert
+### 5. Codec unchanged
 
-H.264-only bleibt. Qualitaet ≠ Codec-Wechsel.
+H.264-only remains. Quality ≠ codec change.
 
 ## Risks / Trade-offs
 
-- [Blur/Effects bei 1080p teurer] → Mitigation: Auto trotzdem 1080; bei messbaren Drops spaeter optional «Performance» — nicht in diesem Change.
-- [Mixer ignoriert hoehere Advertise] → Mitigation: lokales Self-View und Capture trotzdem schaerfer; Stage-Request erhoehen unabhaengig.
-- [Kamera ohne 30fps-1080] → Mitigation: Fallback 720; Start nicht hart failen.
-- [Screen-Limits fuer Stage falsch uebernehmen (niedriges max-fps)] → Mitigation: Decision 2 mit kameratauglichem `max-fps`/`max-mbps`.
+- [Blur/effects more expensive at 1080p] → Mitigation: Auto still 1080; optional «Performance» later if measured drops — not in this change.
+- [Mixer ignores higher advertise] → Mitigation: local self-view and capture still sharper; raise stage request regardless.
+- [Camera without 30fps-1080] → Mitigation: fallback 720; do not hard-fail start.
+- [Screen limits wrong for stage (low max-fps)] → Mitigation: decision 2 with camera-suitable `max-fps`/`max-mbps`.
 
 ## Migration Plan
 
-- Default Auto → Nutzer ohne Setting bekommen 1080 wo moeglich (Verhalten aendert sich spuerbar).
-- Rollback: Setting auf 720p oder Code-Revert der Capture-Konstanten.
+- Default Auto → users without a setting get 1080 where possible (behaviour changes noticeably).
+- Rollback: setting to 720p or code revert of capture constants.
 
 ## Open Questions
 
-- Ob Prejoin-Preview dieselbe Qualitaetsstufe sofort nutzt oder erst nach Join (bevorzugt: sofort, konsistent mit Call).
+- Whether prejoin preview uses the same quality tier immediately or only after join (prefer: immediately, consistent with call).

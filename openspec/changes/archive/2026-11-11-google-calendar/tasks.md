@@ -1,60 +1,60 @@
 # Tasks
 
-## 1. Modell und Persistenz
+## 1. Model and persistence
 
-- [x] 1.1 Account-/Kalender-Modell (Microsoft-Mailbox vs Google-Account, Calendar-IDs, Heim-Kalender, Schreibziele) und lokale Persistenz anlegen; Verify: Unit-Tests für Serialisieren/Defaults (`cargo test -p store --lib` bzw. neues Modul-Filter)
-- [x] 1.2 `CalendarEvent` um Quelle und Account-/Calendar-ID erweitern, ohne bestehende Parser-Fixtures zu brechen; Verify: `cargo test -p chatsvc --lib calendar`
+- [x] 1.1 Account/calendar model (Microsoft mailbox vs Google account, calendar IDs, home calendar, write targets) and local persistence; Verify: unit tests for serialize/defaults (`cargo test -p store --lib` or new module filter)
+- [x] 1.2 Extend `CalendarEvent` with source and account/calendar ID without breaking existing parser fixtures; Verify: `cargo test -p chatsvc --lib calendar`
 
-## 2. Google Auth und API-Client
+## 2. Google auth and API client
 
-- [x] 2.1 Google OAuth Desktop (Code + PKCE), Token speichern/löschen, Client-ID-Quelle dokumentieren; Verify: Unit-Tests für State/Token-Roundtrip ohne Netz, Doku-Abschnitt im Fork-README oder Settings-Hinweis
-- [x] 2.2 Google Calendar Client: Kalenderliste, `events.list` im Zeitfenster, Parse → `CalendarEvent`; Verify: `cargo test` auf Parser-Fixtures (Fixtures aus API-Beispielen)
-- [x] 2.3 Google Write: `events.insert` (Join-Link in Ort/Beschreibung, Attendees, RRULE aus Repeat) und RSVP-Patch mit sendUpdates; Verify: Body-Builder Unit-Tests analog `new_event_body`
+- [x] 2.1 Google OAuth desktop (code + PKCE), store/delete tokens, document client ID source; Verify: unit tests for state/token roundtrip without network, doc section in fork README or settings hint
+- [x] 2.2 Google Calendar client: calendar list, `events.list` in time window, parse → `CalendarEvent`; Verify: `cargo test` on parser fixtures (fixtures from API examples)
+- [x] 2.3 Google write: `events.insert` (join link in location/description, attendees, RRULE from Repeat) and RSVP patch with sendUpdates; Verify: body-builder unit tests like `new_event_body`
 
-## 3. Poll, Merge, Create-Routing
+## 3. Poll, merge, create routing
 
-- [x] 3.1 Merge-Logik (iCal-UID, normalisierter Teams-Join-URL) und Quellen-Labels; Verify: dedizierte Unit-Tests für Dedup und Nicht-Dedup bei nur Titel/Zeit
-- [x] 3.2 `calendar_loop` parallel Outlook + Google pollen; Outlook-Fehler nicht fatal wenn Google verbunden; Verify: `cargo test -p app-state --lib` für Loop-/Merge-Hilfen wo isolierbar, sonst Fixture-Tests der Merge-API
-- [x] 3.3 Create-Pfad: Teams-Join-Link zuerst, dann Inserts je Schreibziel; Outlook-only Home behält bestehenden Graph-Ein-Schritt; Verify: Unit-Tests für Zielauswahl und Fehler «ein Ziel fehlgeschlagen, Link trotzdem da»
-- [x] 3.4 RSVP und Reminder nach Quelle routen; Google-Snooze lokal; Verify: `cargo test -p app-state --lib` Reminder-/RSVP-Filter + `cargo test -p chatsvc --lib` bestehende Outlook-Reminder-Tests grün
+- [x] 3.1 Merge logic (iCal UID, normalized Teams join URL) and source labels; Verify: dedicated unit tests for dedup and no dedup on title/time only
+- [x] 3.2 `calendar_loop` polls Outlook + Google in parallel; Outlook errors not fatal when Google connected; Verify: `cargo test -p app-state --lib` for loop/merge helpers where isolable, else fixture tests of merge API
+- [x] 3.3 Create path: Teams join link first, then inserts per write target; Outlook-only home keeps existing Graph one-step; Verify: unit tests for target selection and error «one target failed, link still there»
+- [x] 3.4 Route RSVP and reminders by source; Google snooze local; Verify: `cargo test -p app-state --lib` reminder/RSVP filters + `cargo test -p chatsvc --lib` existing Outlook reminder tests green
 
 ## 4. UI
 
-- [x] 4.1 Settings: Google verbinden/trennen, Kalenderliste, Heim-Kalender, zusätzliche Schreibziele; Verify: Layout-/State-Tests oder manuelles Smoke-Protokoll im Task-Kommentar nach Demo-Lauf
-  - Settings > Calendar UI verdrahtet (Connect/Disconnect, Home, Also write). Live-Connect braucht `TEAMS_GOOGLE_CLIENT_ID`.
-- [x] 4.2 Kalenderblöcke Quelle anzeigen; New-Meeting nutzt Heim + Schreibziele; Verify: UI- bzw. State-Tests für Default-Ziele und Quellen-Anzeige wo vorhanden
+- [x] 4.1 Settings: connect/disconnect Google, calendar list, home calendar, extra write targets; Verify: layout/state tests or manual smoke protocol in task comment after demo run
+  - Settings > Calendar UI wired (connect/disconnect, home, also write). Live connect needs `TEAMS_GOOGLE_CLIENT_ID`.
+- [x] 4.2 Show source on calendar blocks; new meeting uses home + write targets; Verify: UI or state tests for default targets and source display where present
 
 ## 5. Integration
 
-- [ ] 5.1 End-to-end Smoke (manuell): Connect Google, Raster mit beiden Quellen, New meeting nur Heim, New meeting Heim+Google, RSVP Google, Snooze Google lokal; Verify: kurze Checkliste abgehakt, keine Regression Outlook-only ohne Google
-  - Checkliste:
-    - [ ] Outlook-only ohne Env: Raster und New meeting wie bisher
+- [ ] 5.1 End-to-end smoke (manual): connect Google, grid with both sources, new meeting home only, new meeting home+Google, RSVP Google, snooze Google locally; Verify: short checklist ticked, no Outlook-only regression without Google
+  - Checklist:
+    - [ ] Outlook-only without env: grid and new meeting as before
     - [x] Connect Google via Settings > Calendar
-    - [ ] Raster zeigt Google + Outlook (Merge ohne Doppel bei gleicher iCal-UID)
-    - [ ] New meeting nur Heim (Outlook)
-    - [ ] New meeting Heim+Google Dual-Write
-    - [ ] RSVP auf Google-Event
-    - [ ] Snooze Google-Toast lokal (kein Graph-Fehler)
-    - [ ] Google-Termin mit Teams-Link: Toast Soon/Started mit Join (nicht von Outlook ReminderView blockiert)
-- [x] 5.2 ROADMAP-Zeilen zum Kalender um Google-Konten ergänzen; Verify: Eintrag beschreibt den Fork-Stand korrekt
+    - [ ] Grid shows Google + Outlook (merge without double on same iCal UID)
+    - [ ] New meeting home only (Outlook)
+    - [ ] New meeting home+Google dual write
+    - [ ] RSVP on Google event
+    - [ ] Snooze Google toast locally (no Graph error)
+    - [ ] Google event with Teams link: Soon/Started toast with Join (not blocked by Outlook ReminderView)
+- [x] 5.2 Extend ROADMAP calendar lines for Google accounts; Verify: entry describes fork state correctly
 
-## 6. Kalenderauswahl in der Ansicht (Nachzug)
+## 6. Calendar picker in the view (follow-up)
 
-- [x] 6.1 Wochen-/Monats-Load merged Outlook + Google (nicht nur Graph `calendar_view`); Verify: `cargo test -p app-state --lib` wo isolierbar + manuell Raster mit Google-Events
-- [x] 6.2 Kalenderliste in der Calendar-View (Outlook + Google, An/Aus); Toggle refreshed Grid; Verify: UI-Smoke — Liste sichtbar, Toggle blendet Quelle ein/aus
-- [x] 6.3 OpenSpec Spec/Proposal für Picker + Grid-Load nachziehen; Verify: Spec-Szenarien «Calendar picker» vorhanden
-- [x] 6.4 Ganzägige / Mitternacht→Mitternacht-Events nur in der All-day-Zeile, nicht als Vollhöhen-Blöcke im Stundenraster; Verify: `cargo test -p app-call-model --lib week_grid` (inkl. `midnight_to_midnight_timed_events_sit_in_the_all_day_row`) + Release installiert
-- [x] 6.5 Klick auf Kalenderblock öffnet Event-Detail-Dialog (nicht Chat-Wechsel / Verschwinden); All-day-Chips ebenfalls; Chat/Join nur über Dialog oder Kontextmenü; Verify: Dialog verdrahtet, Unit/Build grün; manuell ZHAW nach App-Neustart
-- [x] 6.6 Event-Detail: Delete entfernt den Termin aus der Quelle (Outlook Graph DELETE / Google events.delete) und aus dem Raster; Verify: `cargo test -p chatsvc --lib delete_event` + Release installiert; manuell Delete auf Google-Termin nach Neustart
-- [x] 6.7 Join-Button bei Teams-Link: im Event-Detail und am Kalenderblock (nicht nur im Join-Fenster kurz vor Start); Verify: Build+Install; Join nicht mehr an `join_available`-Fenster gebunden
-- [x] 6.8 Raster-Refresh: Agenda-Poll darf `calendar_week.events` nicht überschreiben; Element-IDs pro Tag eindeutig (Mehr-Tage); Verify: Delete/Scroll lassen andere Termine sichtbar; `cargo check -p app-state`
+- [x] 6.1 Week/month load merges Outlook + Google (not Graph `calendar_view` only); Verify: `cargo test -p app-state --lib` where isolable + manual grid with Google events
+- [x] 6.2 Calendar list in calendar view (Outlook + Google, on/off); toggle refreshes grid; Verify: UI smoke — list visible, toggle shows/hides source
+- [x] 6.3 Update OpenSpec spec/proposal for picker + grid load; Verify: spec scenarios «Calendar picker» present
+- [x] 6.4 All-day / midnight-to-midnight events only in all-day row, not full-height blocks in hour grid; Verify: `cargo test -p app-call-model --lib week_grid` (incl. `midnight_to_midnight_timed_events_sit_in_the_all_day_row`) + release installed
+- [x] 6.5 Click calendar block opens event detail dialog (not chat switch / disappear); all-day chips too; chat/join only via dialog or context menu; Verify: dialog wired, unit/build green; manual after app restart
+- [x] 6.6 Event detail: delete removes event from source (Outlook Graph DELETE / Google events.delete) and from grid; Verify: `cargo test -p chatsvc --lib delete_event` + release installed; manual delete on Google event after restart
+- [x] 6.7 Join button with Teams link: in event detail and on calendar block (not only in join window just before start); Verify: build+install; join no longer bound to `join_available` window
+- [x] 6.8 Grid refresh: agenda poll must not overwrite `calendar_week.events`; element IDs unique per day (multi-day); Verify: delete/scroll leave other events visible; `cargo check -p app-state`
 
-## 7. Meeting-Start Notifications (Nachzug)
+## 7. Meeting start notifications (follow-up)
 
-- [x] 7.1 Google-Termine nicht durch Outlook ReminderView unterdrücken (`allows` nur für Outlook); Reminder-Tick aus Agenda **und** Wochenraster; Verify: `cargo test -p app-state --lib google_events_stay_allowed`
-- [x] 7.2 Spec/Design: Toast Soon/Started/Live + Join/Snooze/Dismiss/Chime auch für Google mit Teams-Link; Google-Snooze/Dismiss lokal; Verify: Spec-Szenarien «Meeting start notification»
+- [x] 7.1 Do not suppress Google events via Outlook ReminderView (`allows` only for Outlook); reminder tick from agenda **and** week grid; Verify: `cargo test -p app-state --lib google_events_stay_allowed`
+- [x] 7.2 Spec/design: Soon/Started/Live toast + Join/Snooze/Dismiss/Chime for Google with Teams link; Google snooze/dismiss local; Verify: spec scenarios «Meeting start notification»
 
 ## Workflow follow-up
 
-- Nach Merge auf dem Fork: `/opsx-archive` für `google-calendar` (Delta nach `openspec/specs/calendar-accounts/`).
-- Alltagskomits und Tags nach `fork` pushen, nicht nach `origin`.
+- After merge on the fork: `/opsx-archive` for `google-calendar` (delta to `openspec/specs/calendar-accounts/`).
+- Push everyday commits and tags to `fork`, not `origin`.

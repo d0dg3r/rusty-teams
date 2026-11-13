@@ -2,31 +2,31 @@
 
 ## Why
 
-Ohne Exchange-Postfach bleibt der Kalender leer oder bricht beim Laden ab; wer zusätzlich Google nutzt, sieht dessen Termine in der App nicht. Die Kalenderansicht und «New meeting» hängen heute ausschliesslich an Teams/Outlook. Google als zweites Konto (und später weitere Kalender) macht den Kalender auch für Nutzer ohne Microsoft-365-Postfach nutzbar und erlaubt, beide Welten im selben Raster zu führen.
+Without an Exchange mailbox the calendar stays empty or fails to load; users who also rely on Google do not see those events in the app. The calendar view and «New meeting» today depend entirely on Teams/Outlook. Google as a second account (and more calendars later) makes the calendar usable without a Microsoft 365 mailbox and lets both worlds live in the same grid.
 
 ## What Changes
 
-- Der Nutzer kann ein Google-Konto für den Kalender verbinden und wieder trennen (OAuth, Refresh-Token lokal).
-- Das Wochen-/Monatsraster zeigt Termine aus Teams/Outlook und verbundenen Google-Kalendern; gleiche Termine werden zusammengeführt (iCal-UID oder gleicher Teams-Join-Link), Quellen bleiben erkennbar.
-- Der Nutzer wählt einen Heim-Kalender (Outlook oder ein Google-Kalender) und optional zusätzliche Schreibziele; «New meeting» schreibt dorthin und legt den Teams-Join-Link an den Event.
-- Zusagen/Ablehnen und Erinnerungs-Snooze/Dismiss gehen an die Quelle des Blocks; Google-Snooze/Dismiss bleiben lokal in der App (Google kennt Outlook-ReminderView nicht).
-- **Meeting-Start-Notifications** (Toast Soon/Started/Live mit Join, Snooze, Dismiss, Chime) gelten auch für Google-Termine mit Teams-Join-Link — dieselbe UX wie bei Outlook.
-- Vorbereitet auf weitere Kalenderkonten später: Heim-Kalender und Schreibziele sind nicht an «nur Google» gebunden.
-- Kein **BREAKING** für bestehende Outlook-only-Nutzer: ohne Google-Verbindung bleibt das heutige Verhalten.
+- The user can connect and disconnect a Google account for calendar (OAuth, refresh token stored locally).
+- The week/month grid shows events from Teams/Outlook and connected Google calendars; duplicate meetings merge (iCal UID or same Teams join link) while sources stay identifiable.
+- The user picks a home calendar (Outlook or a Google calendar) and optional extra write targets; «New meeting» writes there and attaches the Teams join link to the event.
+- Accept/tentative/decline and reminder snooze/dismiss route to the event source; Google snooze/dismiss stay local in the app (Google has no Outlook ReminderView).
+- **Meeting start notifications** (Soon/Started/Live toasts with Join, Snooze, Dismiss, Chime) also apply to Google events with a Teams join link — same UX as Outlook.
+- Prepared for more calendar accounts later: home calendar and write targets are not bound to «Google only».
+- No **BREAKING** change for existing Outlook-only users: without a Google connection behaviour stays as today.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `calendar-accounts`: Mehrere Kalenderkonten (Teams/Outlook plus Google und später weitere), verbundene Quellen im Raster, Heim-Kalender und wählbare Schreibziele für neue Meetings, quellenspezifische Zusagen und Erinnerungen.
+- `calendar-accounts`: Multiple calendar accounts (Teams/Outlook plus Google and more later), connected sources in the grid, home calendar and selectable write targets for new meetings, source-specific RSVP and reminders.
 
 ### Modified Capabilities
 
-- (keine)
+- (none)
 
 ## Impact
 
-- UI: Einstellungen für Google-Verbindung, Heim-Kalender und Schreibziele; **Kalenderansicht mit Kalenderliste** (Outlook + Google, An/Aus wie in Teams); Kalenderblöcke mit Quelle; **All-day-Zeile** für ganztägige und Mitternacht→Mitternacht-Events; **Event-Detail-Dialog** beim Klick (statt Chat-Wechsel) inkl. **Delete** und **Join** bei Teams-Link; Join auch am Kalenderblock; Dialog «New meeting» schreibt nach gewählten Zielen. Das Wochen-/Monatsraster lädt und zeigt alle ausgewählten Quellen (nicht nur Outlook).
-- Backend: Polling mehrerer Quellen, Merge, Create/RSVP/Reminder-Routing; Google Calendar API + OAuth neben MSAL/Graph.
-- Secrets: Google OAuth Client-ID/-Secret bzw. Desktop-App-Flow; Tokens lokal neben dem Microsoft-Cache.
-- Fork-Release: Feature auf `fork` (`d0dg3r/rusty-teams`); kein Upstream-PR mit dem ganzen Stack nötig.
+- UI: Settings for Google connection, home calendar, and write targets; **calendar view with calendar list** (Outlook + Google, on/off like Teams); calendar blocks with source; **all-day row** for all-day and midnight-to-midnight events; **event detail dialog** on click (instead of switching to chat) including **Delete** and **Join** when a Teams link exists; Join on the calendar block too; «New meeting» dialog writes to chosen targets. Week/month grid loads and shows all selected sources (not Outlook only).
+- Backend: Polling multiple sources, merge, create/RSVP/reminder routing; Google Calendar API + OAuth beside MSAL/Graph.
+- Secrets: Google OAuth client ID/secret or desktop app flow; tokens stored locally beside the Microsoft cache.
+- Fork release: Feature on `fork` (`d0dg3r/rusty-teams`); no need for one giant Upstream PR with the whole stack.

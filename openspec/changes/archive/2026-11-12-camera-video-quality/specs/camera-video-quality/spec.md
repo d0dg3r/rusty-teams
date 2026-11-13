@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Steuert, in welcher Aufloesung die eigene Kamera erfasst und dem Call angeboten wird, und welche Qualitaet fuer Stage-Kamera-Empfang angefordert wird — waehlbar als Auto, 720p oder 1080p.
+Controls the resolution at which the local camera is captured and offered to the call, and the quality requested for stage camera receive — selectable as Auto, 720p, or 1080p.
 
 ## ADDED Requirements
 

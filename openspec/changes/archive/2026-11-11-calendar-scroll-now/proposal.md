@@ -2,28 +2,28 @@
 
 ## Why
 
-Die Tages- und Wochenansicht scrollt heute einmal fest auf 08:00 und folgt der aktuellen Uhrzeit nicht. Beim Öffnen und bei «Today» landet man oft weit weg von «jetzt»; die Now-Linie wandert nur mit, wenn zufällig etwas anderes neu zeichnet. Der Kalender soll zur lokalen Uhrzeit passen.
+The day and week views today scroll once to a fixed 08:00 and do not follow the current time. On open and on «Today» you often land far from «now»; the now line only moves when something else happens to redraw. The calendar should match local time.
 
 ## What Changes
 
-- Beim Öffnen der Tages-/Wochenansicht und bei «Today» scrollt der Viewport so, dass die aktuelle Uhrzeit sichtbar ist (nicht fest 08:00).
-- Die Now-Linie aktualisiert sich im Takt der Uhr, solange die Ansicht offen ist.
-- Solange der Nutzer nicht manuell vertikal scrollt, bleibt die Ansicht an der aktuellen Uhrzeit ausgerichtet; nach manuellem Scroll bleibt die Position, bis «Today» oder erneutes Öffnen der Ansicht die Ausrichtung zurücksetzt.
-- Monatsansicht unverändert (kein Stundenraster).
-- Kein **BREAKING** für Daten oder APIs.
+- When opening the day/week view and on «Today», the viewport scrolls so the current time is visible (not fixed at 08:00).
+- The now line updates on the clock tick while the view stays open.
+- While the user does not scroll vertically manually, the view stays aligned to the current time; after manual scroll the position holds until «Today» or opening the view again resets alignment.
+- Month view unchanged (no hour grid).
+- No **BREAKING** change to data or APIs.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `calendar-now-view`: Tages-/Wochenraster an der lokalen Uhrzeit ausrichten (Scroll, Now-Linie, Nachführen ohne manuelles Scrollen).
+- `calendar-now-view`: Align day/week grid to local time (scroll, now line, follow without manual scroll).
 
 ### Modified Capabilities
 
-- (keine)
+- (none)
 
 ## Impact
 
-- UI: `crates/app/src/views/calendar_view.rs` (Scroll-Offset, Takt, manuelles Scroll erkennen).
-- Optional leichter Takt über GPUI/App-Timer; keine Kalender-API-Änderung.
-- Unabhängig vom Change `google-calendar`.
+- UI: `crates/app/src/views/calendar_view.rs` (scroll offset, tick, detect manual scroll).
+- Optional light tick via GPUI/app timer; no calendar API change.
+- Independent of the `google-calendar` change.

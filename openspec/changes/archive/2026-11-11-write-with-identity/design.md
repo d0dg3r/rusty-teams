@@ -2,52 +2,52 @@
 
 ## Context
 
-Siehe `proposal.md` — Why. Heute:
+See `proposal.md` — Why. Today:
 
-- `AgentSettings.write_with` (leer = Microsoft) steuert Composer-Rewrite in `crates/app/src/views/composer/rewrite.rs` über `local_writer` → `agents::complete_text`.
-- Tooltips nutzen bereits den Profilnamen; Status-/Fehlerstrings und Icons bleiben «Copilot» / `auto_fix_high`.
-- Die Chat-Insel in `crates/app/src/views/conversation/copilot.rs` brandet fest mit `symbols/copilot_color.svg` und ruft nur `engine.ask_copilot` (Teams Sydney).
-- Agent-Threads mit Limit 20 leben in `crates/app-state/src/agents/message_context.rs` — aber an einer festen `message_id`. Die Insel braucht denselben Limit-Gedanken für den ganzen offenen Chat.
+- `AgentSettings.write_with` (empty = Microsoft) drives composer rewrite in `crates/app/src/views/composer/rewrite.rs` via `local_writer` → `agents::complete_text`.
+- Tooltips already use the profile name; status/error strings and icons stay «Copilot» / `auto_fix_high`.
+- The chat island in `crates/app/src/views/conversation/copilot.rs` is fixed to `symbols/copilot_color.svg` branding and only calls `engine.ask_copilot` (Teams Sydney).
+- Agent threads with limit 20 live in `crates/app-state/src/agents/message_context.rs` — but at a fixed `message_id`. The island needs the same limit idea for the whole open chat.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Eine gemeinsame «aktive Writer»-Auflösung (Profil oder Microsoft) für Branding und Ask/Rewrite.
-- Insel-Ask lokal mit Thread-Text (max. 20 Nachrichten), ohne Tools.
-- Kein Copilot-Logo/Copy, wenn der Writer lokal ist.
+- One shared «active writer» resolution (profile or Microsoft) for branding and ask/rewrite.
+- Island ask locally with thread text (max 20 messages), no tools.
+- No Copilot logo/copy when the writer is local.
 
 **Non-Goals:**
 
-- Kein MCP/Tool-Loop in der Insel.
-- Keine Provider-spezifischen Marken-Assets (Ollama-/OpenAI-Logos); ein generisches Bot-Symbol reicht.
-- Kein Umschreiben der Roboter-Agenten-Delegation (Hover-Toolbar).
-- Kein Entfernen des Microsoft-Pfads.
+- No MCP/tool loop in the island.
+- No provider-specific brand assets (Ollama/OpenAI logos); a generic bot symbol is enough.
+- No rewrite of robot agent delegation (hover toolbar).
+- Do not remove the Microsoft path.
 
 ## Decisions
 
-### 1. Gemeinsamer Writer-Resolver
+### 1. Shared writer resolver
 
-Eine kleine Hilfsfunktion (App-seitig, z. B. neben Agents-Runs-Handle) liefert:
+A small helper (app-side, e.g. beside agents runs handle) returns:
 
-- `None` / Microsoft → leeres `write_with`
-- `Some(profile)` → gültiges Chat-Profil
+- `None` / Microsoft → empty `write_with`
+- `Some(profile)` → valid chat profile
 
-Composer und Insel lesen dieselbe Quelle. Anzeigename = `profile.name`.
+Composer and island read the same source. Display name = `profile.name`.
 
-**Alternative:** Modellstring aus `AgentBackend` — verworfen, weil das Dropdown und die Spec den Profilnamen festlegen.
+**Alternative:** Model string from `AgentBackend` — rejected because dropdown and spec fix on profile name.
 
 ### 2. Branding
 
-| Oberfläche | Microsoft | Lokal |
+| Surface | Microsoft | Local |
 |---|---|---|
-| Insel-Logo / Header | `copilot_color.svg` | Symbol `smart_toy` / Bot (bestehendes Asset) |
-| Labels / Status | «Copilot …» | «{profile.name} …» |
-| Composer-Button | `auto_fix_high` ok oder gleiches Bot-Symbol | gleiches Non-Copilot-Symbol + Tooltip «Rewrite with {name}» |
+| Island logo / header | `copilot_color.svg` | Symbol `smart_toy` / bot (existing asset) |
+| Labels / status | «Copilot …» | «{profile.name} …» |
+| Composer button | `auto_fix_high` ok or same bot symbol | same non-Copilot symbol + tooltip «Rewrite with {name}» |
 
-Overflow-Menü (`chat_header_actions.rs`) nutzt denselben dynamischen Label-String statt `'static` Copilot-Text.
+Overflow menu (`chat_header_actions.rs`) uses the same dynamic label string instead of `'static` Copilot text.
 
-### 3. Insel-Ask-Pfad
+### 3. Island ask path
 
 ```
 ask
@@ -57,35 +57,35 @@ ask
   |     complete_text(system, thread + question)
   |
   +-- else
-        engine.ask_copilot (wie heute; ohne Engine → UNAVAILABLE)
+        engine.ask_copilot (as today; without engine → UNAVAILABLE)
 ```
 
-Systemprompt: Fragen zum aktuellen Teams-Chat beantworten; nur den gelieferten Thread nutzen; keine erfundenen Nachrichten.
+System prompt: answer questions about the current Teams chat; use only the supplied thread; do not invent messages.
 
-Thread-Bau: `store.messages(chat_id, None, 20)` (bzw. äquivalent), Senderauflösung analog `message_context` (`local_names` / `sender_name`). Keine Abhängigkeit von einer angeklickten `message_id`.
+Thread build: `store.messages(chat_id, None, 20)` (or equivalent), sender resolution like `message_context` (`local_names` / `sender_name`). No dependency on a clicked `message_id`.
 
-**Alternative:** Insel an Agent-Run + MCP anbinden — verworfen (Explorations-Entscheidung: Option 1).
+**Alternative:** Wire island to agent run + MCP — rejected (exploration decision: option 1).
 
-### 4. Verfügbarkeit ohne Engine
+### 4. Availability without engine
 
-- Rewrite: `rewrite_available` schon `local_writer.is_some() || engine` — belassen/härten.
-- Insel-Button/Ask: bei lokalem Writer Engine nicht voraussetzen; `ask_copilot`-Zweig nur auf Microsoft-Pfad.
+- Rewrite: `rewrite_available` already `local_writer.is_some() || engine` — keep/harden.
+- Island button/ask: with local writer do not require engine; `ask_copilot` branch only on Microsoft path.
 
-### 5. Settings-Hinweis
+### 5. Settings hint
 
-Kurztext unter «Write with» erwähnen, dass Rewrite **und** die Chat-Insel dem Eintrag folgen.
+Short text under «Write with» notes that rewrite **and** the chat island follow the entry.
 
 ## Risks / Trade-offs
 
-- [Dünner Kontext] 20 Nachrichten reichen für lange Chats nicht → Mitigation: gleiches Limit wie Agent-Thread; später erweiterbar, Spec bleibt «at most twenty».
-- [Kanal vs Chat] Insel heute nur bei `Selection::Chat` → bleibt so; Kanäle out of scope.
-- [Mehrere Insel-Turns] Folgefragen bekommen weiterhin den aktuellen Chat-Thread, nicht zwingend den Insel-Dialogverlauf → akzeptiert für v1; Dialog-Turns nur in der UI.
-- [Falsches Profil gelöscht] `write_with` zeigt auf fehlende ID → wie heute Fallback Richtung Microsoft-Label in Settings; Ask sollte klar fehlschlagen oder Writer als fehlend behandeln — Implementierung: fehlendes Profil = kein local_writer (wie `local_writer` heute).
+- [Thin context] 20 messages are not enough for long chats → mitigation: same limit as agent thread; extend later, spec stays «at most twenty».
+- [Channel vs chat] Island today only with `Selection::Chat` — stays; channels out of scope.
+- [Multiple island turns] Follow-up questions still get current chat thread, not necessarily island dialog history → accepted for v1; dialog turns UI-only.
+- [Profile deleted] `write_with` points at missing ID → like today fallback toward Microsoft label in settings; ask should fail clearly or treat writer as missing — implementation: missing profile = no local_writer (as `local_writer` today).
 
 ## Migration Plan
 
-Kein Datenmigrationsschritt: `write_with` existiert. Reines UI-/Ask-Verhalten. Rollback = vorheriges Binary.
+No data migration: `write_with` exists. UI/ask behaviour only. Rollback = previous binary.
 
 ## Open Questions
 
-Keine spez-relevanten. Icon-Wahl (`smart_toy` vs `bot`) ist Implementierungsdetail.
+None spec-relevant. Icon choice (`smart_toy` vs `bot`) is implementation detail.

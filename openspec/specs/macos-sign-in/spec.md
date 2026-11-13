@@ -1,7 +1,7 @@
 # macos-sign-in Specification
 
 ## Purpose
-Auf macOS startet und verwaltet die App Chrome oder Chromium mit Remote-Debugging und eigenem Profil, meldet sich darüber am Microsoft-Konto an, startet aus dem lokalen Cache und hält genau eine laufende App-Instanz.
+On macOS the app starts and manages Chrome or Chromium with remote debugging and its own profile, signs in to the Microsoft account through it, starts from the local cache, and keeps exactly one running app instance.
 
 ## Requirements
 

@@ -2,61 +2,61 @@
 
 ## Context
 
-Siehe `proposal.md` für den Anlass. Automatisches Anmelden ist heute Linux-only: [`crates/app/src/main.rs`](crates/app/src/main.rs) ruft nur unter `target_os = "linux"` [`linux_browser::start`](crates/app/src/linux_browser.rs) auf. macOS fällt auf `CdpTransport` und Port 9222. [`crates/browser`](crates/browser/src/config.rs) kennt `Wsl | Windows | Linux`: Chrome-Suche, `ss`/`/proc`-Kill und User-Agent (ausserhalb Linux als Windows NT) decken macOS nicht ab.
+See `proposal.md` for motivation. Automatic sign-in today is Linux-only: [`crates/app/src/main.rs`](crates/app/src/main.rs) calls [`linux_browser::start`](crates/app/src/linux_browser.rs) only under `target_os = "linux"`. macOS falls through to `CdpTransport` and port 9222. [`crates/browser`](crates/browser/src/config.rs) knows `Wsl | Windows | Linux`: Chrome search, `ss`/`/proc` kill, and user agent (outside Linux as Windows NT) do not cover macOS.
 
-Ton und Kamera laufen bereits über den Nicht-Windows-Pfad: Auto/Low → ADM ([`MicSettings::uses_device_track_on`](crates/calling/src/mic_processing.rs), auf macOS CoreAudio), Music/Off/Computer-Ton → cpal, Kamera → nokhwa `input-native`. [`scripts/build-macos.sh`](scripts/build-macos.sh) setzt die Usage-Strings im `.app`.
+Audio and camera already use the non-Windows path: Auto/Low → ADM ([`MicSettings::uses_device_track_on`](crates/calling/src/mic_processing.rs), CoreAudio on macOS), Music/Off/computer sound → cpal, camera → nokhwa `input-native`. [`scripts/build-macos.sh`](scripts/build-macos.sh) sets usage strings in the `.app`.
 
-Bildschirmteilen: [`share_picker_for`](crates/calling/src/screen.rs) kennt nur `WAYLAND_DISPLAY`. Mit aktivem ScreenCaptureKit-System-Picker ist `get_source_list` leer; dieselbe delegated-Picker-API wie beim Wayland-Portal (`start_capture(None)`, `has_delegated_picker`, `watch_picker`) ist in libwebrtc schon vorhanden.
+Screen sharing: [`share_picker_for`](crates/calling/src/screen.rs) only knows `WAYLAND_DISPLAY`. With ScreenCaptureKit system picker active, `get_source_list` is empty; the same delegated picker API as Wayland portal (`start_capture(None)`, `has_delegated_picker`, `watch_picker`) already exists in libwebrtc.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Dieselbe Chrome-Betreuung wie Linux auf macOS (Start, Login-Fenster, headless, Watchdog, `--endpoint`).
-- Share-Picker auf macOS über den ScreenCaptureKit-Dialog, ohne Vorschauliste.
-- Bestehendes Audio- und Kamera-Verhalten in Specs festhalten und mit Unit-Tests absichern, wo es Lücken gibt.
+- Same Chrome supervision as Linux on macOS (start, login window, headless, watchdog, `--endpoint`).
+- Share picker on macOS via ScreenCaptureKit dialog, without preview list.
+- Pin existing audio and camera behaviour in specs and cover with unit tests where gaps exist.
 
 **Non-Goals:**
 
-- Eingebautes Login ohne Chrome, WebView2 auf macOS.
-- Neue Kamera- oder ADM-Pipeline.
-- Upstream-PR; Lieferung nur auf dem Fork.
-- Übrige Roadmap-Lücken (Linux-Benachrichtigungen, Light Theme, …).
+- Built-in login without Chrome, WebView2 on macOS.
+- New camera or ADM pipeline.
+- Upstream PR; delivery on fork only.
+- Remaining roadmap gaps (Linux notifications, light theme, …).
 
 ## Decisions
 
-### `Platform::Macos` im Browser-Crate
+### `Platform::Macos` in the browser crate
 
-Neue Variante neben Linux/Windows/WSL in [`config.rs`](crates/browser/src/config.rs):
+New variant beside Linux/Windows/WSL in [`config.rs`](crates/browser/src/config.rs):
 
-- Profil und Mode-Datei unter Application Support (`directories` / `ProjectDirs`), Name wie Linux `rusty-teams-chrome`.
-- Chrome-Suche: feste Kandidaten `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`, Chromium-Pendant, `~/Applications/…`, plus PATH-Namen.
-- User-Agent in [`launch.rs`](crates/browser/src/launch.rs): macOS-Chrome-String wenn `Platform::Macos`.
-- Port-Kill in [`process.rs`](crates/browser/src/process.rs): Listener per `lsof` (oder gleichwertig), Prozessname aus `ps`/`comm`; `is_chrome_image` akzeptiert auch `Google Chrome`.
+- Profile and mode file under Application Support (`directories` / `ProjectDirs`), name like Linux `rusty-teams-chrome`.
+- Chrome search: fixed candidates `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`, Chromium counterpart, `~/Applications/…`, plus PATH names.
+- User agent in [`launch.rs`](crates/browser/src/launch.rs): macOS Chrome string when `Platform::Macos`.
+- Port kill in [`process.rs`](crates/browser/src/process.rs): listener via `lsof` (or equivalent), process name from `ps`/`comm`; `is_chrome_image` also accepts `Google Chrome`.
 
-### Supervisor für Nicht-Windows
+### Supervisor for non-Windows
 
-[`linux_browser.rs`](crates/app/src/linux_browser.rs) und die `cfg(target_os = "linux")`-Stellen in `main.rs` auf macOS mitnehmen (Modul umbenennen oder `cfg(any(linux, macos))`). Verhalten bleibt: Erststart → Login-Fenster, sonst `ensure_running`, `hide_after_login`, Watchdog, Live-Retry nach Headless.
+Bring [`linux_browser.rs`](crates/app/src/linux_browser.rs) and `cfg(target_os = "linux")` sites in `main.rs` to macOS (rename module or `cfg(any(linux, macos))`). Behaviour unchanged: first start → login window, else `ensure_running`, `hide_after_login`, watchdog, live retry after headless.
 
-### Share-Picker: macOS = delegated wie Wayland
+### Share picker: macOS = delegated like Wayland
 
-`share_picker_for` liefert auf macOS `SharePicker::Portal` (oder ein gemeinsamer Name für «delegated»), unabhängig von `WAYLAND_DISPLAY`. Der bestehende Portal-Capture-Thread in `screen.rs` wiederverwendet `start_capture(None)` + `watch_picker` + `ensure_picker_visible`; ScreenCaptureKit ist in libwebrtc standardmässig an. Menü: zwei Aktionen ohne Quellenliste, wie unter Wayland.
+`share_picker_for` returns `SharePicker::Portal` on macOS (or a shared name for «delegated»), independent of `WAYLAND_DISPLAY`. Existing portal capture thread in `screen.rs` reuses `start_capture(None)` + `watch_picker` + `ensure_picker_visible`; ScreenCaptureKit is on by default in libwebrtc. Menu: two actions without source list, as on Wayland.
 
-### Audio und Kamera: Spec first, wenig Code
+### Audio and camera: spec first, little code
 
-`uses_device_track_on(false)` gilt bereits für macOS. Spec und ggf. ein klar benannter Test («nicht Windows») dokumentieren CoreAudio. Kamera: keine Pipeline-Änderung; Usage-Strings bleiben in `build-macos.sh`.
+`uses_device_track_on(false)` already holds for macOS. Spec and possibly a clearly named test («not Windows») document CoreAudio. Camera: no pipeline change; usage strings stay in `build-macos.sh`.
 
-### Doku
+### Docs
 
-README-Statuszeile macOS: selbst gestartetes Chrome wie Linux. Fork-Remote für Alltagspushes.
+README status line macOS: self-started Chrome like Linux. Fork remote for everyday pushes.
 
 ## Risks / Trade-offs
 
-- [Chrome-App-Bundle-Pfad weicht ab / nur Chromium] → Kandidatenliste + PATH; Fehler klar loggen und auf `--endpoint` hinweisen.
-- [ScreenCaptureKit-Dialog ohne TCC / Usage-String] → `.app`-Bundle Pflicht; bare Binary zeigt keinen Dialog.
-- [Prozessname «Google Chrome» scheitert an `starts_with("chrome")`] → Kill-Filter explizit erweitern und unit-testen.
-- [Live-Smoke nur auf dem Mac-Runner] → Unit-Tests für Config/Launch/Picker auf Linux CI; manueller Smoke auf `macos-arm64`.
+- [Chrome app bundle path differs / Chromium only] → candidate list + PATH; log error clearly and point to `--endpoint`.
+- [ScreenCaptureKit dialog without TCC / usage string] → `.app` bundle required; bare binary shows no dialog.
+- [Process name «Google Chrome» fails `starts_with("chrome")`] → extend kill filter explicitly and unit-test.
+- [Live smoke only on Mac runner] → unit tests for config/launch/picker on Linux CI; manual smoke on `macos-arm64`.
 
 ## Migration Plan
 
-Kein gespeicherter Zustand. Bestehende manuelle `--endpoint`-Nutzer auf macOS behalten den Anker. Rückbau ist der Commit. Lieferung nur auf `fork`.
+No persisted state. Existing manual `--endpoint` users on macOS keep the anchor. Rollback is the commit. Delivery on `fork` only.

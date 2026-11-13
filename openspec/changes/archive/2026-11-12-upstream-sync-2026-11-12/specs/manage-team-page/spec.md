@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Teams können nativ verwaltet werden: eine Manage-Team-Seite zeigt die Member-Liste.
+Teams can be managed natively: a Manage team page shows the member list.
 
 ## ADDED Requirements
 

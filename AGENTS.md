@@ -2,22 +2,23 @@
 
 ## Forgejo SoT vs Upstream
 
-Pflicht-Workflow (Cursor Rule `.cursor/rules/fork-workflow.mdc`, `alwaysApply`):
+Required workflow (Cursor rule `.cursor/rules/fork-workflow.mdc`, `alwaysApply`):
 
-- **`origin`** (`forgejo.lan/devops-geek/rusty-teams`) = SoT; entwickeln, pushen, Tags, Releases
-- **`github`** (`d0dg3r/rusty-teams`) = Offsite-Spiegel; Alltag nur lesen
-- **`upstream`** (`danieldaeschle/rusty-teams`) = Upstream; nur fetch + gezielte kleine PRs
-- Nie Alltagskomits nach `upstream` pushen
-- Upstream-PRs: frischer Branch von `upstream/main`, eine Scheibe Thema
-- Releases: Tags wie `v0.3.0-joe.1` auf Forgejo; GitHub bekommt dieselben Assets per Spiegel (`GITHUB_RELEASE.md`)
-
+- **`origin`** (`forgejo.lan/devops-geek/rusty-teams`) = SoT; develop, push, tags, releases
+- **`github`** (`d0dg3r/rusty-teams`) = offsite mirror; everyday read-only
+- **`upstream`** (`danieldaeschle/rusty-teams`) = Upstream; fetch + thin targeted PRs only
+- Never push everyday commits to `upstream`
+- Upstream PRs: fresh branch from `upstream/main`, one topic slice
+- Releases: tags like `v0.3.0-joe.1` on Forgejo; GitHub gets the same assets via mirror (`GITHUB_RELEASE.md`)
 ## OpenSpec
 
-Produktverhalten liegt unter `openspec/` (Config: `openspec/config.yaml`). Skills: `/opsx-propose`, `/opsx-apply`, `/opsx-update`, `/opsx-archive`, `/opsx-sync`, `/opsx-explore`.
+Product behaviour lives under `openspec/` (config: `openspec/config.yaml`). Skills: `/opsx-propose`, `/opsx-apply`, `/opsx-update`, `/opsx-archive`, `/opsx-sync`, `/opsx-explore`.
 
-1. Beobachtbares Verhalten ändert sich → zuerst Change unter `openspec/changes/` (`/opsx-propose`).
-2. Umsetzen mit `/opsx-apply`; Tasks abhaken inkl. Verify (`cargo test …`).
-3. Nach Merge auf dem Fork: `/opsx-archive` (Deltas in `openspec/specs/`).
-4. Bugfix ohne neues Verhalten, reines Refactoring/Tooling/Doku → `skip_specs: true` oder Cursor-Plan ohne Spec-Delta.
+**Language: English only** for all OpenSpec artifacts (proposal, design, tasks, specs, archives). Rule: `.cursor/rules/openspec-english.mdc` (`alwaysApply`). App UI may still offer German; that is product chrome, not OpenSpec authoring language.
 
-CLI: `/usr/local/bin/openspec` (Rule `openspec-cli-path`). Nicht «fehlt» melden ohne PATH-Check.
+1. Observable behaviour changes → first a change under `openspec/changes/` (`/opsx-propose`).
+2. Implement with `/opsx-apply`; check off tasks including verify (`cargo test …`).
+3. After merge on the fork: `/opsx-archive` (deltas into `openspec/specs/`).
+4. Bugfix with no new behaviour, pure refactoring/tooling/docs → `skip_specs: true` or a Cursor plan without a spec delta.
+
+CLI: `/usr/local/bin/openspec` (rule `openspec-cli-path`). Do not report «missing» without a PATH check.

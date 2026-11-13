@@ -1,7 +1,7 @@
 # macos-call-audio Specification
 
 ## Purpose
-Auf macOS hört die Gegenseite dasselbe Mikrofon wie in Teams im Browser: Auto und Low senden über den CoreAudio-ADM-Pfad. Music-Mode, Off und Computer-Sound nutzen die Software-Kette. Kamera-Vorschau und -Senden nutzen die Systemkamera. Auflegen darf den Client nicht abstürzen.
+On macOS the remote party hears the same microphone as Teams in the browser: Auto and Low send over the CoreAudio ADM path. Music Mode, Off, and computer sound use the software chain. Camera preview and send use the system camera. Hanging up must not crash the client.
 
 ## Requirements
 
