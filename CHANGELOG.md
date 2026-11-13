@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.0-joe.1] - 2026-11-13
+
+### Added
+
+- Calendar event peek aligned with Teams: full scrollable agenda, enlarge to a
+  Tracking panel with attendees by response, and Google fields (calendar name,
+  reminders, source link, Open in Google Calendar, Email guests).
+- Local Linux install script always rebuilds with `.env.google.local` and
+  refuses a binary without the Google client id; missing id with connected
+  Google accounts surfaces a notice instead of an empty week.
+
+### Fixed
+
+- Call ring / end tones on macOS and Linux; Echo test call connection hardening.
+
+### Changed
+
+- Islands UI look bound for agents (`docs/design/islands/SPEC.md`, `ui-spec` rule).
+
 ## [0.3.0-joe.10] - 2026-11-13
 
 ### Changed
