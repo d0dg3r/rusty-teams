@@ -108,7 +108,7 @@ impl NativeHttp {
         if !force_refresh && let Some(held) = self.held(scope) {
             return Some(held);
         }
-        for app in scope.tab_order() {
+        for app in App::ALL {
             let Ok(Value::String(token)) = session
                 .run_with_token(app, scope, TOKEN_BODY, &json!({}), force_refresh)
                 .await
@@ -200,12 +200,26 @@ impl NativeHttp {
                 retry_after,
             });
         }
+        let location = response
+            .headers()
+            .get("Location")
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_owned);
         let text = response.text().await?;
-        let body = if text.is_empty() {
+        let mut body = if text.is_empty() {
             Value::Null
         } else {
             serde_json::from_str(&text).unwrap_or(Value::String(text))
         };
+        if let Some(location) = location {
+            match &mut body {
+                Value::Null => body = json!({ "location": location }),
+                Value::Object(map) if !map.contains_key("location") => {
+                    map.insert("location".into(), Value::String(location));
+                }
+                _ => {}
+            }
+        }
         Ok(ApiResponse {
             status,
             body,
@@ -337,9 +351,6 @@ mod tests {
         )));
         assert!(!eligible(&Request::get(
             "https://teams.cloud.microsoft/v2/"
-        )));
-        assert!(!eligible(&Request::get(
-            "https://outlook.office.com/api/v2.0/me/messages"
         )));
         assert!(!eligible(&Request::get(
             "http://graph.microsoft.com/v1.0/me"

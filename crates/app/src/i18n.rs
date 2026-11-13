@@ -72,6 +72,22 @@ mod tests {
     }
 
     #[test]
+    fn ui_locale_calendar_peek_keys_en_de() {
+        let _guard = locale_test_lock();
+        apply_locale("en");
+        assert_eq!(tr("calendar.peek.email_organizer"), "Email organizer");
+        assert_eq!(tr("calendar.peek.series"), "Series");
+        apply_locale("de");
+        assert_eq!(
+            tr("calendar.peek.email_organizer"),
+            "E-Mail an den Organisator"
+        );
+        assert_eq!(tr("calendar.peek.teams_meeting"), "Microsoft Teams-Besprechung");
+        assert_eq!(tr("calendar.peek.google_meet"), "Google Meet");
+        assert_eq!(tr("calendar.peek.accept"), "Annehmen");
+    }
+
+    #[test]
     fn ui_locale_settings_calendar_connect_keys() {
         let _guard = locale_test_lock();
         apply_locale("en");

@@ -21,8 +21,8 @@
 
 ## 4. Integration check
 
-- [ ] 4.1 Cold onboarding smoke after profile wipe: splash phases during Chrome T-logo, MS login fonts OK, then shell; verify banner path on forced re-auth
-- [ ] 4.2 Connect Google from installed Linux and macOS builds without shell env; verify account appears and reconnect after disconnect stays one click
+- [x] 4.1 Cold onboarding smoke after profile wipe: splash phases during Chrome T-logo, MS login fonts OK, then shell; verify banner path on forced re-auth
+- [x] 4.2 Connect Google from installed Linux and macOS builds without shell env; verify account appears and reconnect after disconnect stays one click
 
 ## Workflow follow-up
 

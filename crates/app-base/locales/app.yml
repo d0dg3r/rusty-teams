@@ -559,6 +559,9 @@ calls:
     recording_join_failed:
       en: The recording service could not join
       de: Der Aufzeichnungsdienst konnte nicht beitreten
+    echo_test_failed:
+      en: The test call could not start
+      de: Der Testanruf konnte nicht gestartet werden
     captions_join_failed:
       en: The captions service could not join
       de: Der Untertitel-Dienst konnte nicht beitreten
@@ -945,6 +948,110 @@ calls:
     teams_link_added:
       en: Teams meeting link is added
       de: Teams-Besprechungslink wird hinzugefügt
+calendar:
+  peek:
+    all_day:
+      en: All day
+      de: Ganztägig
+    teams_meeting:
+      en: Microsoft Teams meeting
+      de: Microsoft Teams-Besprechung
+    google_meet:
+      en: Google Meet
+      de: Google Meet
+    series:
+      en: Series
+      de: Serie
+    invited_you:
+      en: "%{name} invited you."
+      de: "%{name} hat dich eingeladen."
+    accepted:
+      en: Accepted
+      de: Angenommen
+    declined:
+      en: Declined
+      de: Abgelehnt
+    tentative:
+      en: Tentative
+      de: Mit Vorbehalt
+    no_response:
+      en: Didn't respond
+      de: Keine Antwort
+    email_organizer:
+      en: Email organizer
+      de: E-Mail an den Organisator
+    message_placeholder:
+      en: Add a message (optional)
+      de: Nachricht hinzufügen (optional)
+    accept:
+      en: Accept
+      de: Annehmen
+    decline:
+      en: Decline
+      de: Ablehnen
+    tentative_action:
+      en: Tentative
+      de: Mit Vorbehalt
+    this_occurrence:
+      en: This occurrence
+      de: Nur dieser Termin
+    entire_series:
+      en: Entire series
+      de: Ganze Serie
+    join_link:
+      en: Join link
+      de: Beitrittslink
+    tracking:
+      en: Tracking
+      de: Nachverfolgung
+    organizer:
+      en: Organizer
+      de: Organisator
+    required:
+      en: Required
+      de: Erforderlich
+    optional:
+      en: Optional
+      de: Optional
+    attendees_unknown:
+      en: Attendee list not available.
+      de: Teilnehmerliste nicht verfügbar.
+    when_starts:
+      en: When the event starts
+      de: Zum Beginn des Termins
+    minute_before:
+      en: "%{count} minute before"
+      de: "%{count} Minute vorher"
+    minutes_before:
+      en: "%{count} minutes before"
+      de: "%{count} Minuten vorher"
+    hour_before:
+      en: "%{count} hour before"
+      de: "%{count} Stunde vorher"
+    hours_before:
+      en: "%{count} hours before"
+      de: "%{count} Stunden vorher"
+    day_before:
+      en: "%{count} day before"
+      de: "%{count} Tag vorher"
+    days_before:
+      en: "%{count} days before"
+      de: "%{count} Tage vorher"
+    view_source:
+      en: View source
+      de: Quelle anzeigen
+    open_in_google:
+      en: Open in Google Calendar
+      de: In Google Kalender öffnen
+    email_guests:
+      en: Email guests
+      de: Gäste per E-Mail
+    canceled_prefix:
+      en: "Canceled: "
+      de: "Abgesagt: "
+    no_title:
+      en: (No title)
+      de: (Kein Titel)
 agents:
   start:
     new_session:

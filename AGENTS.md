@@ -10,6 +10,7 @@ Required workflow (Cursor rule `.cursor/rules/fork-workflow.mdc`, `alwaysApply`)
 - Never push everyday commits to `upstream`
 - Upstream PRs: fresh branch from `upstream/main`, one topic slice
 - Releases: tags like `v0.3.0-joe.1` on Forgejo; GitHub gets the same assets via mirror (`GITHUB_RELEASE.md`)
+- Local install: `scripts/install-linux-local.sh --restart` only. A bare `cargo build` + copy lacks `TEAMS_GOOGLE_CLIENT_ID` (from `.env.google.local`) and drops every Google calendar.
 ## OpenSpec
 
 Product behaviour lives under `openspec/` (config: `openspec/config.yaml`). Skills: `/opsx-propose`, `/opsx-apply`, `/opsx-update`, `/opsx-archive`, `/opsx-sync`, `/opsx-explore`.
@@ -22,3 +23,7 @@ Product behaviour lives under `openspec/` (config: `openspec/config.yaml`). Skil
 4. Bugfix with no new behaviour, pure refactoring/tooling/docs → `skip_specs: true` or a Cursor plan without a spec delta.
 
 CLI: `/usr/local/bin/openspec` (rule `openspec-cli-path`). Do not report «missing» without a PATH check.
+
+## UI look and shell
+
+Chrome, islands, spacing, radii, type, and colour roles: `docs/design/islands/SPEC.md` (rule `ui-spec`, `GUARDRAILS.md` Look). Feature OpenSpecs describe content and behaviour on those surfaces; they do not invent look tokens.
