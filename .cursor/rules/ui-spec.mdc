@@ -1,0 +1,20 @@
+---
+description: App chrome and look follow docs/design/islands/SPEC.md
+alwaysApply: true
+---
+
+# UI specification (islands)
+
+## Required
+
+1. Before changing UI chrome, layout, colours, radii, or spacing: read `GUARDRAILS.md` and `docs/design/islands/SPEC.md`.
+2. Reuse layout constants from `crates/app-ui-kit/src/layout.rs` and palette / `theme::` helpers from `crates/app-base/src/theme.rs`. No new gap, radius, or product-chrome hex literals outside that scale.
+3. Allowed surfaces: island, dialog, popover/menu, call window, toast. A new surface type updates `docs/design/islands/SPEC.md` in the same change (and the feature OpenSpec that needs it).
+4. Feature OpenSpecs describe content and behaviour on those surfaces; they do not invent look tokens.
+
+## Do not
+
+- Invent parallel spacing or radius numbers in views
+- Hard-code raw hex for product chrome in views (change the palette / scheme instead)
+- Add a new shell band or primary island slot without extending the islands SPEC
+- Grow radius drift (3 / 4 / 8 / 12); when touching such a file, move toward 6 or 10

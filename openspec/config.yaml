@@ -7,8 +7,12 @@ context: |
 
   OpenSpec holds observable product behaviour (capabilities, requirements, scenarios).
   It does not replace AGENTS.md, .cursor/rules/ (fork-workflow, openspec-cli-path,
-  openspec-english), or service/code docs — those still define how agents work,
-  push, and release.
+    openspec-english, ui-spec), or service/code docs — those still define how agents
+    work, push, and release.
+
+  App chrome and look (islands, gaps, radii, colour roles) live in
+  docs/design/islands/SPEC.md. Feature specs describe content and behaviour on those
+  surfaces; they do not invent look tokens.
 
   Specs describe behaviour and testable scenarios only. No Rust types, no crate
   names as requirements, no implementation steps (those belong in design.md or
@@ -31,9 +35,13 @@ rules:
     - One capability path per durable system behaviour (kebab-case).
     - Prefer scenarios over prose; keep ADDED/MODIFIED/REMOVED deltas precise.
     - Write requirements and scenarios in English.
+    - Describe content and behaviour on existing surfaces; do not invent colours,
+      gaps, or radii (those belong in docs/design/islands/SPEC.md).
   design:
     - Point at real repo paths (crates/, scripts/) when useful.
     - Respect the fork-vs-upstream remote rules when delivery is affected.
+    - Shell and look follow docs/design/islands/SPEC.md; extend that file when a
+      change needs a new surface or measure.
     - Write the design in English.
   tasks:
     - Checklist items that an agent can check off; include verify via

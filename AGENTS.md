@@ -22,3 +22,7 @@ Product behaviour lives under `openspec/` (config: `openspec/config.yaml`). Skil
 4. Bugfix with no new behaviour, pure refactoring/tooling/docs → `skip_specs: true` or a Cursor plan without a spec delta.
 
 CLI: `/usr/local/bin/openspec` (rule `openspec-cli-path`). Do not report «missing» without a PATH check.
+
+## UI look and shell
+
+Chrome, islands, spacing, radii, type, and colour roles: `docs/design/islands/SPEC.md` (rule `ui-spec`, `GUARDRAILS.md` Look). Feature OpenSpecs describe content and behaviour on those surfaces; they do not invent look tokens.
