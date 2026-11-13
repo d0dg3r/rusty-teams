@@ -2,3 +2,6 @@ target/
 .claude/
 docs/
 dist/
+
+# Local Google OAuth for Connect (never commit)
+.env.google.local

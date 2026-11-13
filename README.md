@@ -77,7 +77,7 @@
 **Calendar (fork)**
 - Outlook calendar as today, plus optional Google Calendar accounts (Settings > Calendar)
 - Merge by iCal UID / Teams join URL; New meeting writes to the home calendar and optional extra targets
-- Google OAuth Desktop (PKCE): set `TEAMS_GOOGLE_CLIENT_ID` and optionally `TEAMS_GOOGLE_CLIENT_SECRET` before Connect
+- Google OAuth Desktop (PKCE): Connect Google opens the system browser; release builds ship the project client id
 
 **App**
 - Dark theme, opens instantly from the cache
@@ -104,18 +104,20 @@ cargo run -p app -- --demo
 
 ### Google Calendar (optional)
 
-1. Create an OAuth Desktop client in Google Cloud Console with redirect `http://127.0.0.1:<port>/` (loopback; the app picks a free port).
-2. Export before starting the app:
+1. Settings > Calendar > Connect Google.
+2. Finish sign-in in the browser (if Google says the app is not verified, choose Advanced, then continue).
+3. Choose the home calendar and optional dual-write targets.
 
-```bash
-export TEAMS_GOOGLE_CLIENT_ID="….apps.googleusercontent.com"
-# only if the client has a secret:
-export TEAMS_GOOGLE_CLIENT_SECRET="…"
-```
+Release builds bake in the project OAuth Desktop client. Local builds without that client stay Outlook-only unless you export `TEAMS_GOOGLE_CLIENT_ID` (and optionally `TEAMS_GOOGLE_CLIENT_SECRET`) before `cargo run`.
 
-3. Settings > Calendar > Connect Google, then choose home calendar and optional dual-write targets.
+#### Maintainer: Google Cloud client for releases
 
-Without these env vars the calendar stays Outlook-only.
+Before the next `v*` tag:
+
+1. Enable the Google Calendar API.
+2. OAuth consent screen: External, app name Rusty Teams, scopes `calendar` and `userinfo.email`, status Production (Testing blocks other accounts).
+3. Create an OAuth Desktop client (loopback `http://127.0.0.1:<port>/`; the app picks a free port).
+4. Store `TEAMS_GOOGLE_CLIENT_ID` and `TEAMS_GOOGLE_CLIENT_SECRET` as Forgejo Actions secrets on `devops-geek/rusty-teams` (not in git). The Forgejo Release workflows bake them into Linux, Windows, and macOS artifacts (`v*` tags refuse to build without the client id).
 
 | Task | Command |
 |---|---|

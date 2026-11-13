@@ -5,6 +5,7 @@ use gpui_kit::*;
 use store::CalendarAccounts;
 
 use crate::app_state::AppState;
+use crate::i18n::tr;
 use crate::theme;
 use crate::views::widgets::icon;
 
@@ -73,7 +74,7 @@ pub fn render(app: &Entity<AppState>, cx: &App) -> Div {
                 .mt(px(8.))
                 .text_size(px(12.))
                 .text_color(theme::text_muted())
-                .child("Connect Google in Settings › Calendar"),
+                .child(tr("settings.calendar.picker_connect_hint")),
         );
     }
     column
