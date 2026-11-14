@@ -101,6 +101,26 @@ mod tests {
     }
 
     #[test]
+    fn ui_locale_settings_help_keys() {
+        let _guard = locale_test_lock();
+        apply_locale("en");
+        assert_eq!(tr("settings.nav.help"), "Help");
+        assert_eq!(tr("settings.help.create_bundle_button"), "Create");
+        assert_eq!(tr("settings.help.logs_path"), "Logs root");
+        assert_eq!(tr("settings.help.bundles_path"), "Support packages");
+        assert_eq!(tr("settings.help.packages_empty"), "No support packages yet");
+        assert_eq!(tr("settings.help.copy_path_tooltip"), "Copy path");
+        apply_locale("de");
+        assert_eq!(tr("settings.nav.help"), "Hilfe");
+        assert_eq!(tr("settings.help.create_bundle_button"), "Erstellen");
+        assert_eq!(tr("settings.help.logs_path"), "Log-Root");
+        assert_eq!(tr("settings.help.bundles_path"), "Support-Pakete");
+        assert_eq!(tr("settings.help.packages_empty"), "Noch keine Support-Pakete");
+        assert_eq!(tr("settings.help.copy_path_tooltip"), "Pfad kopieren");
+        assert!(tr("settings.help.detail").contains("Support-Paket"));
+    }
+
+    #[test]
     fn ui_locale_auth_splash_keys() {
         let _guard = locale_test_lock();
         apply_locale("en");

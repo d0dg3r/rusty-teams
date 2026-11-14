@@ -74,7 +74,8 @@ impl EventPeek {
             .map(|value| value.chars().count())
             .unwrap_or(0);
         app_base::diagnostics::record(format!(
-            "calendar peek: open {event_key} preview_chars={opening_preview}"
+            "calendar peek: open id_len={} preview_chars={opening_preview}",
+            event_key.len()
         ));
         state.update(cx, |app, cx| app.enrich_calendar_event(&event_key, cx));
         let message = cx.new(|cx| {
@@ -106,7 +107,8 @@ impl EventPeek {
             .unwrap_or(0);
         if pulled != opening_preview {
             app_base::diagnostics::record(format!(
-                "calendar peek: pulled preview_chars={pulled} for {event_key}"
+                "calendar peek: pulled preview_chars={pulled} id_len={}",
+                event_key.len()
             ));
         }
         peek
