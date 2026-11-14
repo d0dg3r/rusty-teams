@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.0-joe.2] - 2026-11-14
+
+### Added
+
+- Help: opt-in debug logging (default off), ring-rotated diagnostics, and scrubbed
+  local support packages.
+- Settings: preferred browser for links and Google OAuth.
+- Sign-in: splash and banner phases for managed Chrome.
+- MCP: `schedule_wakeup` resumes an app-started agent session later.
+- Google OAuth client baked into the binary (calendars work without a local
+  `.env` bake on release builds).
+
+### Fixed
+
+- Calendar event peek wiring restored after an upstream sync dropped AppShell
+  open/render handlers.
+- Support-package / diagnostics review fixes (merge ring slot `.2`, scrub peer
+  names from call logs, safer paths).
+
 ## [0.4.0-joe.1] - 2026-11-13
 
 ### Added
