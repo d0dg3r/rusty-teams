@@ -69,7 +69,7 @@ install -m 644 "$repoRoot/crates/app/assets/icon/teams-fast-256.png" \
 
 # Absolute Exec so Dock/menu launch still finds the binary.
 sed "s|^Exec=.*|Exec=$HOME/.local/bin/teams|" \
-  "$repoRoot/crates/app/assets/linux/rusty-teams.desktop" \
+  "$repoRoot/packaging/linux/rusty-teams.desktop" \
   > "$HOME/.local/share/applications/rusty-teams.desktop"
 chmod 644 "$HOME/.local/share/applications/rusty-teams.desktop"
 update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true

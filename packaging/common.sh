@@ -33,7 +33,7 @@ packaging_icon() {
 
 packaging_desktop() {
   local root="$1"
-  printf '%s\n' "$root/crates/app/assets/linux/rusty-teams.desktop"
+  printf '%s\n' "$root/packaging/linux/rusty-teams.desktop"
 }
 
 # Binary aus dem Release-Build (CI setzt BINARY_PATH)

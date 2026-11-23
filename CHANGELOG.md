@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0-joe.4] - 2026-11-23
+
+### Fixed
+
+- Linux deb, rpm and Arch packages use `packaging/linux/rusty-teams.desktop`.
+  The package build looked for a desktop file under `crates/app/assets/linux`
+  that is no longer in the tree, so the Linux release job failed.
+
 ## [0.5.0-joe.3] - 2026-11-23
 
 ### Added
