@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0-joe.3] - 2026-11-23
+
+### Added
+
+- Search and the new-chat recipient field find people outside the organization:
+  known contacts by name, and anyone else once the email is complete. The row
+  shows the email and the organization name.
+
 ## [0.4.0-joe.23] - 2026-11-16
 
 ### Added
