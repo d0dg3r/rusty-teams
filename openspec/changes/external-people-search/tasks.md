@@ -24,5 +24,5 @@
 
 ## 5. Delivery
 
-- [ ] 5.1 CHANGELOG entry and the next free `v0.5.0-joe.N` tag on `origin` only
-- [ ] 5.2 After the release workflow publishes assets, open a Forgejo pull request to `main` whose body links the Forgejo release and the `d0dg3r` mirror when that mirror has the tag
+- [x] 5.1 CHANGELOG entry and the next free `v0.5.0-joe.N` tag on `origin` only
+- [x] 5.2 After the release workflow publishes assets, open a Forgejo pull request to `main` whose body links the Forgejo release and the `d0dg3r` mirror when that mirror has the tag
