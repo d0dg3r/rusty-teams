@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0-joe.5] - 2026-11-24
+
+### Changed
+
+- A newer release is a notice that opens the release page in the browser. The app
+  no longer downloads a binary or replaces itself. One switch, `updates.enabled`,
+  on Windows, Linux, and macOS. Flatpak still updates through the package.
+- This build also contains the call work from `0.5.0-joe.1` and `0.5.0-joe.2`
+  (Windows device track, headset recovery, hardware H.264, organizer mute,
+  720p level, screen-share scale) together with people search from `0.5.0-joe.3`.
+
 ## [0.5.0-joe.4] - 2026-11-23
 
 ### Fixed
