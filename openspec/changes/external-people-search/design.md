@@ -25,19 +25,19 @@ See proposal.md. Name suggestions come from substrate people requests filtered t
 
 2. **External lookup stays behind a complete email.** `is_email_address` is unchanged. `externalsearchv3` gains `includeEDUsers=true`. The profile parser reads `email`, `mail`, and `userPrincipalName` into the mail field, and accepts a single profile object as well as a `value` array.
 
-3. **Directory failure does not skip the external lookup.** For a complete email, a Graph error (including HTTP 400 and 404 on the address filter) is treated as an empty directory, then `search_external` runs. A non-email Graph error is still returned. A person matches the query when mail or user principal name equals it, ignoring case.
+3. **Directory failure does not skip the external lookup.** For a complete email, an unknown address (HTTP 400 or 404, or an empty directory) is treated as no directory person, then `search_external` runs. Any other Graph error still tries the external lookup. If that lookup returns a person whose mail or user principal name matches, that person is the result. If it returns nobody or fails, the Graph error is returned and is not cached. A non-email Graph error is still returned without an external lookup. A person matches the query when mail or user principal name equals it, ignoring case.
 
 4. **Id from MRI.** `person()` sets `user_id` from `ExternalDirectoryObjectId`, otherwise from an `8:orgid:` MRI. The switcher keeps requiring `user_id`.
 
 5. **Subtitle.** Job title when set, otherwise the first email. Organization name when `company_name` is set; department remains only when there is a job title and no organization, so existing organization rows stay readable. New-chat rows use the same pair: email, then organization when known. `remember_external` already stores the tenant name; the recipient row reads it for directory-shaped users.
 
-6. **New chat merges both sources.** After the debounce it calls `search_people` and `server_suggestions`, then dedupes by user id. Suggestion people come first. Local chat members stay first, as today.
+6. **New chat merges both sources.** After the debounce it starts `server_suggestions` with the email fallback off and `search_people` together, then dedupes by user id. Suggestion people come first. The search switcher keeps the email fallback inside `server_suggestions`. Local chat members stay first, as today.
 
 ## Risks / Trade-offs
 
 - [A subtype the service rejects empties the people group] → The added names are the ones Teams sends; the unit test locks the list so a later edit is visible.
 - [External lookup returns a person whose address fields are empty] → The row is omitted. The spec requires a mail or user principal name match.
-- [Two requests from the recipient field] → Same debounce as today; a stale generation is dropped.
+- [Two requests from the recipient field] → They run together after the same debounce. The email path does not call `search_people` a second time. A stale generation is dropped.
 
 ## Migration Plan
 

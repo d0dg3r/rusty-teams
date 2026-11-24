@@ -39,6 +39,21 @@ When the query is a complete email address and the organization directory has no
 - **WHEN** the directory lookup for a complete email returns no person or reports that the address is unknown
 - **THEN** the external lookup still runs and its person is shown
 
+#### Scenario: External person still shows when the directory fails
+
+- **WHEN** the directory lookup for a complete email fails for a reason other than an unknown address and the external lookup returns that person
+- **THEN** the person appears as a person result
+
+#### Scenario: Directory failure without an external person is a failed search
+
+- **WHEN** the directory lookup for a complete email fails for a reason other than an unknown address and the external lookup returns no matching person
+- **THEN** the search is reported as failed and the empty result is not kept
+
+#### Scenario: New chat looks up a complete email once
+
+- **WHEN** the user types a complete email in the new-chat recipient field
+- **THEN** the people-index suggestions and the directory lookup run together, and the external lookup runs at most once
+
 #### Scenario: Incomplete email stays in the directory
 
 - **WHEN** the query contains `@` but is not a complete email address
