@@ -426,7 +426,7 @@ mod tests {
         assert!(!should_arm_hook(auto, false));
         assert!(!should_arm_hook(low, true));
         assert!(!should_arm_hook(music, true));
-        assert!(should_arm_hook(auto, auto.uses_device_track_on(true)));
+        assert!(should_arm_hook(auto, auto.uses_device_track()));
 
         clear();
         apply_for_outgoing(auto, true);
@@ -434,7 +434,7 @@ mod tests {
 
         OVERLOADED.store(true, Ordering::Relaxed);
         apply_for_outgoing(auto, true);
-        // Hook stays armed so fallback WebRTC NS keeps protecting the Auto track (which has built-in NS off).
+        // Hook stays armed so fallback WebRTC NS keeps protecting the Windows Auto track (built-in NS off).
         assert!(HOOK_ARMED.load(Ordering::Relaxed));
         assert!(overloaded());
 
