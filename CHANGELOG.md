@@ -16,6 +16,23 @@
   known contacts by name, and anyone else once the email is complete. The row
   shows the email and the organization name.
 
+## [0.5.0-joe.2] - 2026-11-23
+
+### Fixed
+
+- An organizer mute closes the local microphone, and the next toggle clears it.
+- Off and music mode no longer restore the classical noise-suppression track. A named microphone matches the listed device name, and a device switch counts only when audio actually starts.
+- An H.264 answer at level 3.0 with 720p limits is raised to level 3.1, so the 720p layer can encode.
+- Screen share scales the frame to the 1080p budget before the I420 conversion.
+- Linux and macOS notice a headset that appears or disappears during a call.
+
+## [0.5.0-joe.1] - 2026-11-23
+
+### Changed
+
+- Forgejo `main` includes upstream 0.5.0 (`8a5c5082`).
+- Windows calls use the platform microphone track for Auto and Low, recover a headset that drops and returns mid-call, send YUY2 cameras, prefer hardware H.264 with a software fallback, and keep the small GPU blur model on battery.
+
 ## [0.4.0-joe.23] - 2026-11-16
 
 ### Added
