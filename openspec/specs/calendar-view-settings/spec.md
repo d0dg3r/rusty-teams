@@ -7,7 +7,7 @@ Lets the user choose how the calendar opens and how its weeks and hours are laid
 
 ### Requirement: Default calendar view
 
-Settings › Calendar SHALL offer a Default view with the choices Last used, Day, Work week, Week and Month. Last used MUST be the default. Opening the calendar after a restart MUST show the chosen span; with Last used it MUST show the span the user chose last.
+Settings › Calendar SHALL offer a Default view with the choices Last used, Day, Work week, Week and Month. Last used MUST be the default. Opening the calendar after a restart MUST show the chosen span; with Last used it MUST show the span the user chose last. Settings › Calendar MUST contain view layout preferences only and MUST NOT host calendar account connect forms.
 
 #### Scenario: Last used survives a restart
 
@@ -23,6 +23,12 @@ Settings › Calendar SHALL offer a Default view with the choices Last used, Day
 
 - **WHEN** the user clicks a day in the month grid, which opens that day in Day, and Default view is Last used
 - **THEN** the remembered span stays the one the user last chose from the view menu
+
+#### Scenario: Calendar section is view-only
+
+- **WHEN** the user opens Settings › Calendar
+- **THEN** the page shows default view, first day, work days and hours, time scale, and weekend work-week behaviour
+- **AND** it does not show Google, CalDAV, or ICS connect forms
 
 ### Requirement: Work days and hours follow the mailbox
 
