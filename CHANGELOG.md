@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.1-joe.2] - 2026-11-25
+
+### Fixed
+
+- Updates follow the install, as in
+  [#86](https://github.com/danieldaeschle/rusty-teams/pull/86) after review.
+  Windows still downloads quietly and restarts when idle and not in a call.
+  A Linux copy under `~/.local` asks, then downloads and restarts.
+  macOS, deb, rpm, AppImage, and a binary that is not that install open the
+  release page. Flatpak does not check. `0.6.1-joe.1` had only the release-page
+  path.
+
 ## [0.6.1-joe.1] - 2026-11-25
 
 Preview of the upstream pull requests marked `status: ready`, on top of 0.6.1.
@@ -28,7 +40,8 @@ Upstream has not merged them yet.
   ([#102](https://github.com/danieldaeschle/rusty-teams/pull/102)).
 - Guests can attach files in a chat of a guest organization
   ([#76](https://github.com/danieldaeschle/rusty-teams/pull/76)).
-- The update switch is labelled as a release notice
+- The update switch is labelled as a release notice. The install-kind
+  behaviour from the same pull request is in `0.6.1-joe.2`
   ([#86](https://github.com/danieldaeschle/rusty-teams/pull/86)).
 
 ## [0.5.0-joe.5] - 2026-11-24

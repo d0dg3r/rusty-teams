@@ -35,6 +35,7 @@ use gpui_kit::*;
 use store::Store;
 
 use crate::app_state::{AppState, Mode};
+pub use app_base::updater;
 use crate::call::remote_command::{
     ADMIT_ALL_FLAG, CALL_FLAG, HANG_UP_FLAG, JOIN_FLAG, RemoteCommand, UNMUTE_FLAG,
 };
@@ -225,6 +226,8 @@ fn main() {
             return;
         }
     }
+    #[cfg(any(windows, target_os = "linux"))]
+    updater::clean_up_old_binary();
     let mode = Mode {
         demo: arguments.demo,
         read_only: arguments.read_only,

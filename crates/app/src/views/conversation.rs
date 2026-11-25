@@ -950,6 +950,17 @@ impl ConversationView {
         }
     }
 
+    pub fn composer_is_empty(&self, cx: &App) -> bool {
+        self.composer.read(cx).is_empty(cx)
+    }
+
+    #[cfg(windows)]
+    pub fn send_in_flight(&self) -> bool {
+        self.pending
+            .iter()
+            .any(|row| matches!(row.delivery, Delivery::Sending))
+    }
+
     fn on_composer_event(
         &mut self,
         _: &Entity<Composer>,
