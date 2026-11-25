@@ -1,9 +1,11 @@
 ---
-status: proposed
+status: rejected
 date: 2026-11-24
 ---
 
 # ADR 0024: A new release is a notice, not a new binary
+
+Rejected 2026-11-25. Upstream #86 and the follow-up on this fork keep self-update where the install owns the binary (ADR 0014). This proposal is not in effect.
 
 ## Context
 
