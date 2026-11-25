@@ -1,13 +1,35 @@
 # Changelog
 
-## [Unreleased]
+## [0.6.1-joe.1] - 2026-11-25
+
+Preview of the upstream pull requests marked `status: ready`, on top of 0.6.1.
+Upstream has not merged them yet.
+
+### Added
+
+- A one-to-one chat call starts as audio
+  ([#101](https://github.com/danieldaeschle/rusty-teams/pull/101)).
+- Search resolves people outside the organization, including a completed email
+  and a personal Microsoft account
+  ([#87](https://github.com/danieldaeschle/rusty-teams/pull/87)).
 
 ### Fixed
 
 - On a Wayland session, keyboard and pointer input outside the window counts as
-  activity, so presence stays Available while you work in another app. The
-  Wayland path follows Lukas Grundtner,
-  [danieldaeschle/rusty-teams#96](https://github.com/danieldaeschle/rusty-teams/pull/96).
+  activity, so presence stays Available while you work in another app
+  ([#106](https://github.com/danieldaeschle/rusty-teams/pull/106)).
+- Linux sign-in leaves the splash and opens the browser window
+  ([#105](https://github.com/danieldaeschle/rusty-teams/pull/105)).
+- Ring and meeting cards stay beside the desktop notification
+  ([#104](https://github.com/danieldaeschle/rusty-teams/pull/104)).
+- When Google rejects a calendar token, the app offers sign-in again
+  ([#103](https://github.com/danieldaeschle/rusty-teams/pull/103)).
+- The camera list only contains nodes that can capture
+  ([#102](https://github.com/danieldaeschle/rusty-teams/pull/102)).
+- Guests can attach files in a chat of a guest organization
+  ([#76](https://github.com/danieldaeschle/rusty-teams/pull/76)).
+- The update switch is labelled as a release notice
+  ([#86](https://github.com/danieldaeschle/rusty-teams/pull/86)).
 
 ## [0.5.0-joe.5] - 2026-11-24
 
