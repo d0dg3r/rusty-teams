@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- On a Wayland session, keyboard and pointer input outside the window counts as
+  activity, so presence stays Available while you work in another app. The
+  Wayland path follows Lukas Grundtner,
+  [danieldaeschle/rusty-teams#96](https://github.com/danieldaeschle/rusty-teams/pull/96).
+
 ## [0.5.0-joe.5] - 2026-11-24
 
 ### Changed
