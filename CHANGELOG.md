@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.1-joe.6] - 2026-11-26
+
+The macOS package from `0.6.1-joe.5` did not build. This tag has that fix,
+and every package is published with a SHA-256 sidecar.
+
+### Fixed
+
+- The macOS host-load probe compiles. `thread_info` takes the flavor as
+  `u32`, and a pthread id is an integer.
+
+### Added
+
+- Each release package has a sibling `<name>.sha256`. Check it with
+  `sha256sum -c` in the same directory.
+
 ## [0.6.1-joe.5] - 2026-11-26
 
 A send limit that arrives before the camera or the share is sending is kept

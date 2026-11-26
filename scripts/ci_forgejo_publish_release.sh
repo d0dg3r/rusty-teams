@@ -18,6 +18,53 @@
 #   GITHUB_MIRROR_SKIP=1          — skip mirror (Notfall)
 set -euo pipefail
 
+# Eine Zeile im Format von `sha256sum -c`: "<hex>  <basename>".
+file_sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    echo "sha256sum or shasum is required" >&2
+    return 1
+  fi
+}
+
+write_sha256_sidecar() {
+  local src="$1"
+  printf '%s  %s\n' "$(file_sha256 "$src")" "$(basename "$src")" >"${src}.sha256"
+}
+
+# Hängt zu jedem Paket eine .sha256 an. Eine Datei, die schon .sha256 heisst, bleibt allein.
+# Ergebnis steht in checksum_files (Bash 3 auf dem macOS-Runner hat kein mapfile).
+append_sha256_sidecars() {
+  checksum_files=()
+  local src
+  for src in "$@"; do
+    checksum_files+=("$src")
+    case "$src" in
+      *.sha256) continue ;;
+    esac
+    write_sha256_sidecar "$src"
+    checksum_files+=("${src}.sha256")
+  done
+}
+
+if [[ "${1:-}" == "--checksum-self-test" ]]; then
+  shift
+  root="$(mktemp -d)"
+  trap 'rm -rf "$root"' EXIT
+  printf 'package-bytes' >"$root/rusty-teams-demo.zip"
+  printf 'already-a-sum' >"$root/note.sha256"
+  append_sha256_sidecars "$root/rusty-teams-demo.zip" "$root/note.sha256"
+  [[ "${#checksum_files[@]}" -eq 3 ]]
+  [[ -f "$root/rusty-teams-demo.zip.sha256" ]]
+  [[ ! -f "$root/note.sha256.sha256" ]]
+  (cd "$root" && sha256sum -c rusty-teams-demo.zip.sha256)
+  echo "checksum self-test ok"
+  exit 0
+fi
+
 token="${GITHUB_TOKEN:-${FORGEJO_TOKEN:-}}"
 api="${GITHUB_API_URL:-}"
 repo="${GITHUB_REPOSITORY:-}"
@@ -89,6 +136,9 @@ if (( ${#files[@]} == 0 )); then
   echo "No files matched: $files_spec" >&2
   exit 1
 fi
+
+append_sha256_sidecars "${files[@]}"
+files=("${checksum_files[@]}")
 
 # Windows host runners: prefer explicit jq next to Git Bash PATH.
 if ! command -v jq >/dev/null 2>&1; then

@@ -28,6 +28,8 @@ Workflow: [`.forgejo/workflows/release.yaml`](.forgejo/workflows/release.yaml).
 | Windows ARM64 | `windows-arm64` | `rusty-teams-<ver>-windows-arm64.exe` |
 | macOS Apple Silicon (arm64, macOS 14+) | `macos-arm64` | `rusty-teams-<ver>-macos-arm64.zip` |
 
+Neben jedem Paket liegt `<dateiname>.sha256` (eine Zeile, `sha256sum -c` im selben Ordner). Das gilt ab `v0.6.1-joe.6`. Ein schon veröffentlichtes Release bekommt die Datei nicht nachträglich.
+
 Tags mit `-` (z. B. `v0.3.0-joe.1`) sind `prerelease`.
 
 ## Secrets (Forgejo-Repo)
