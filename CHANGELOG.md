@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.6.1-joe.3] - 2026-11-26
+
+Upstream `main` through the token-refresh log, plus the sync that landed
+after `0.6.1-joe.2`.
+
+### Fixed
+
+- Editing a channel post to add a channel mention saves. Team and tag
+  mentions in a channel edit still save.
+- A long local write no longer freezes the window. Reads of chats and the
+  sidebar keep their own connections.
+- An accepted one-to-one call shows the chat button when the ring has no
+  thread id. The button opens the chat with that caller.
+- A new channel shows under its team, not as a group chat. A message for a
+  channel the app does not know yet refreshes the team list (at most once a
+  minute).
+- "See fewer channels" sits below the channels it revealed.
+- Linux hardware H.264 packed slice headers include their start code, so a
+  receiver can decode them
+  ([#95](https://github.com/danieldaeschle/rusty-teams/pull/95)).
+- When Microsoft refuses a token refresh, the log says why
+  ([#126](https://github.com/danieldaeschle/rusty-teams/pull/126)).
+
 ## [0.6.1-joe.2] - 2026-11-25
 
 ### Fixed
