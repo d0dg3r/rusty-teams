@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.1-joe.4] - 2026-11-26
+
+Upstream pull request 97, still open there: sharing a window on macOS opens
+the system window picker. The macOS package is Apple Silicon and needs
+macOS 14. The published file name stays `macos-universal.zip`.
+
+### Fixed
+
+- On macOS, Share a window opens the ScreenCaptureKit window picker. Cancelling
+  it leaves the call connected. Closing the shared window ends the share with
+  a notice.
+
 ## [0.6.1-joe.3] - 2026-11-26
 
 Upstream `main` through the token-refresh log, plus the sync that landed

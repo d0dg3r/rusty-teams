@@ -26,7 +26,7 @@ Workflow: [`.forgejo/workflows/release.yaml`](.forgejo/workflows/release.yaml).
 | Flatpak | `ubuntu-latest` (Forgejo job `flatpak`) | `rusty-teams-<ver>-x86_64.flatpak` — SDK build on the runner via `packaging/flatpak/build_flatpak.sh`; job fails the release if the bundle is missing |
 | Windows amd64 | `ci-runner-windows-01` | `rusty-teams-<ver>-windows-amd64.exe` |
 | Windows ARM64 | `windows-arm64` | `rusty-teams-<ver>-windows-arm64.exe` |
-| macOS universal | `macos-arm64` | `rusty-teams-<ver>-macos-universal.zip` |
+| macOS Apple Silicon (macOS 14+), Dateiname bleibt | `macos-arm64` | `rusty-teams-<ver>-macos-universal.zip` |
 
 Tags mit `-` (z. B. `v0.3.0-joe.1`) sind `prerelease`.
 
