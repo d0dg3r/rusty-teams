@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.1-joe.5] - 2026-11-26
+
+A send limit that arrives before the camera or the share is sending is kept
+and applied when that source starts. On macOS the call report records, every
+two seconds, the CPU time each thread used, which camera effects are on, and
+the thermal state. The lines are labelled `host load`.
+
+### Fixed
+
+- An early camera or share send limit is applied when that source starts
+  sending, even if the controller does not repeat it.
+
+### Added
+
+- macOS call reports include a `host load` line every two seconds.
+
 ## [0.6.1-joe.4] - 2026-11-26
 
 Upstream pull request 97, still open there: sharing a window on macOS opens
