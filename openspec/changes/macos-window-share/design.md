@@ -21,12 +21,11 @@ Upstream pull request 97 is unmerged. Its head is merged onto Forgejo `main`. Th
 
 1. Take the pull request's capturer, calling-crate wiring, and macOS build script.
 2. Keep `.github/workflows/build.yml` as the mirror stub.
-3. Point `.forgejo/workflows/release-macos.yaml` at `target/aarch64-apple-darwin/release/teams-macos.zip` and install only the arm64 Rust target. The uploaded name stays `rusty-teams-<ver>-macos-universal.zip`.
+3. Point `.forgejo/workflows/release-macos.yaml` at `target/aarch64-apple-darwin/release/teams-macos.zip` and install only the arm64 Rust target. The uploaded name is `rusty-teams-<ver>-macos-arm64.zip`.
 
 ## Risks / Trade-offs
 
-- Intel Macs no longer get a slice in this package.
-- The asset name still says universal. The changelog states that the binary is arm64.
+- Intel Macs get no package from this release. The asset name says arm64.
 
 ## Migration Plan
 

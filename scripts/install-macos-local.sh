@@ -22,7 +22,7 @@ cargo build -p app --release --bin teams --target aarch64-apple-darwin
 BIN="$repoRoot/target/aarch64-apple-darwin/release/teams"
 ls -la "$BIN"
 
-APP="$repoRoot/target/universal/release/Rusty Teams.app"
+APP="$repoRoot/target/aarch64-apple-darwin/release/Rusty Teams.app"
 version="$(sed -n 's/^version = "\(.*\)"/\1/p' "$repoRoot/Cargo.toml" | head -1)"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"

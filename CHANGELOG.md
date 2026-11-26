@@ -3,8 +3,8 @@
 ## [0.6.1-joe.4] - 2026-11-26
 
 Upstream pull request 97, still open there: sharing a window on macOS opens
-the system window picker. The macOS package is Apple Silicon and needs
-macOS 14. The published file name stays `macos-universal.zip`.
+the system window picker. The macOS package is Apple Silicon (arm64) and
+needs macOS 14. Its file name is `macos-arm64.zip`.
 
 ### Fixed
 

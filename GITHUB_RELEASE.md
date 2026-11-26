@@ -26,7 +26,7 @@ Workflow: [`.forgejo/workflows/release.yaml`](.forgejo/workflows/release.yaml).
 | Flatpak | `ubuntu-latest` (Forgejo job `flatpak`) | `rusty-teams-<ver>-x86_64.flatpak` — SDK build on the runner via `packaging/flatpak/build_flatpak.sh`; job fails the release if the bundle is missing |
 | Windows amd64 | `ci-runner-windows-01` | `rusty-teams-<ver>-windows-amd64.exe` |
 | Windows ARM64 | `windows-arm64` | `rusty-teams-<ver>-windows-arm64.exe` |
-| macOS Apple Silicon (macOS 14+), Dateiname bleibt | `macos-arm64` | `rusty-teams-<ver>-macos-universal.zip` |
+| macOS Apple Silicon (arm64, macOS 14+) | `macos-arm64` | `rusty-teams-<ver>-macos-arm64.zip` |
 
 Tags mit `-` (z. B. `v0.3.0-joe.1`) sind `prerelease`.
 
@@ -60,6 +60,6 @@ Verifiziert auf Forgejo-Release und GitHub-Spiegel:
 | `*-x86_64.flatpak` | required Linux asset (SDK build + Chrome extra-data); install with `flatpak install --user rusty-teams-<ver>-x86_64.flatpak` |
 | `*-windows-amd64.exe` | ok (Forgejo `ci-runner-windows-01` + Mirror) |
 | `*-windows-arm64.exe` | ok (Homelab `win-02` war offline; einmalig `windows-11-arm` Smoke, Asset nach Forgejo gespiegelt). Dauerhaft: Label `windows-arm64`. `.cargo/config.toml` hat `+crt-static` für `aarch64-pc-windows-msvc`. |
-| `*-macos-universal.zip` | ok |
+| `*-macos-arm64.zip` | ok ab `v0.6.1-joe.4` (Apple Silicon, macOS 14) |
 
 Reusable Windows-Jobs brauchen `workflow_call` im Publish-`if` und Secret-Name `GH_MIRROR_TOKEN` (Forgejo verbietet Prefix `GITHUB_`).

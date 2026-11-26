@@ -7,7 +7,7 @@ On macOS, choosing Share a window did nothing. The app asked WebRTC for a window
 ## What Changes
 
 - A window share on macOS opens the system window picker. Cancelling it leaves the call connected. Closing the shared window ends the share and shows a notice.
-- The macOS package is Apple Silicon and needs macOS 14. The published file name stays `macos-universal.zip`.
+- The macOS package is Apple Silicon (arm64) and needs macOS 14. The published file is `macos-arm64.zip`.
 - GitHub Actions stay a mirror stub. The window-share code does not turn GitHub into a build farm.
 
 ## Capabilities

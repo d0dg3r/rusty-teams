@@ -1,5 +1,4 @@
-# Forgejo: macOS Apple Silicon (macOS 14+) — forgejo-runner-mac-01 (label macos-arm64).
-# The published file keeps the name macos-universal.zip. The binary inside is arm64.
+# Forgejo: macOS Apple Silicon (arm64, macOS 14+) — forgejo-runner-mac-01 (label macos-arm64).
 
 name: Release (macOS)
 
@@ -56,7 +55,7 @@ jobs:
           fi
           mkdir -p dist
           # Finder / Dock install: full .app zip. macOS does not swap a bare Mach-O in place.
-          cp target/aarch64-apple-darwin/release/teams-macos.zip "dist/rusty-teams-${ver}-macos-universal.zip"
+          cp target/aarch64-apple-darwin/release/teams-macos.zip "dist/rusty-teams-${ver}-macos-arm64.zip"
           ls -la dist/
 
       - name: Publish Forgejo + GitHub mirror
