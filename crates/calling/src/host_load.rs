@@ -82,6 +82,7 @@ mod macos {
 
     pub fn thread_cpu() -> Vec<ThreadCpu> {
         unsafe {
+            #[allow(deprecated)]
             let task = libc::mach_task_self();
             let mut threads: libc::thread_act_array_t = std::ptr::null_mut();
             let mut count: libc::mach_msg_type_number_t = 0;
@@ -95,7 +96,7 @@ mod macos {
                 let mut info_count = libc::THREAD_BASIC_INFO_COUNT;
                 let status = libc::thread_info(
                     thread,
-                    libc::THREAD_BASIC_INFO,
+                    libc::THREAD_BASIC_INFO as libc::thread_flavor_t,
                     &mut info as *mut libc::thread_basic_info as libc::thread_info_t,
                     &mut info_count,
                 );
@@ -126,7 +127,7 @@ mod macos {
     fn thread_name(thread: libc::thread_act_t) -> String {
         unsafe {
             let pthread = libc::pthread_from_mach_thread_np(thread);
-            if !pthread.is_null() {
+            if pthread != 0 {
                 let mut buffer = [0u8; 64];
                 if libc::pthread_getname_np(pthread, buffer.as_mut_ptr().cast(), buffer.len()) == 0
                 {
