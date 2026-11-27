@@ -18,20 +18,26 @@ When the managed Chromium browser stops after a Teams sign-in, the app SHALL kee
 
 ### Requirement: Sign-in finishes only when a token can be used
 
-The app SHALL treat Teams sign-in as finished, and move the managed browser to the background, only when the Teams page reports an opened encrypted cache entry or a still-valid access token. Storage names that merely look like tokens MUST NOT finish sign-in. Until that report arrives, the sign-in window SHALL stay visible.
+The app SHALL treat Teams sign-in as finished, and move the managed browser to the background, only when the Teams page reports a still-valid access token, either in the clear or decrypted from an encrypted cache entry. Storage names that merely look like tokens, and decrypted entries without a still-valid access token, MUST NOT finish sign-in. Until that report arrives, the sign-in window SHALL stay visible.
 
-#### Scenario: Opened encrypted cache finishes sign-in
+#### Scenario: Valid access token in encrypted cache finishes sign-in
 
-- **WHEN** the Teams page is showing and reports at least one opened encrypted cache entry
+- **WHEN** the Teams page is showing and decrypts an encrypted cache entry containing a still-valid access token
 - **THEN** the app may move the managed browser to the background
 
-#### Scenario: A still-valid access token finishes sign-in
+#### Scenario: Expired encrypted cache leaves the window open
 
-- **WHEN** the Teams page is showing and reports a still-valid access token and no opened encrypted entry
+- **WHEN** the Teams page decrypts encrypted cache entries with the persisted cookie, but none of the plain or decrypted entries is a still-valid access token
+- **THEN** the managed browser window stays visible
+- **AND** the app does not announce that sign-in has finished
+
+#### Scenario: A still-valid plain access token finishes sign-in
+
+- **WHEN** the Teams page is showing and reports a still-valid plain access token and no opened encrypted entry
 - **THEN** the app may move the managed browser to the background
 
 #### Scenario: Token-shaped names leave the window open
 
-- **WHEN** the Teams page is showing and its storage names look like tokens, but it reports no opened encrypted cache entry and no still-valid access token
+- **WHEN** the Teams page is showing and its storage names look like tokens, but it reports no still-valid access token
 - **THEN** the managed browser window stays visible
 - **AND** the app does not announce that sign-in has finished

@@ -10,7 +10,7 @@ See proposal.md for why the hand-over loops. Today `hide_after_login` in `crates
 
 - Persist only the MSAL cache-encryption cookie before a Chromium stop, with the same conversion and tests as upstream pull request 123.
 - Raise the app stop budget so that save cannot cancel the close.
-- Finish sign-in only when the Teams page reports an opened sealed entry or a still-valid access token.
+- Finish sign-in only when the Teams page reports a still-valid access token, plain or decrypted from a sealed entry.
 
 **Non-Goals:**
 
@@ -33,7 +33,7 @@ Alternative considered: set the cookie from Rust after the new process starts. R
 
 ### The hide gate reads a page report, not key names
 
-A new page expression, evaluated with `awaitPromise`, walks localStorage the way `fetch.js` does: sealed entries are those with `id`, `nonce`, and `data`; it opens them with the encryption cookie; a still-valid access token is an `AccessToken` whose `expiresOn` is still in the future. The hide tracker advances only when `opened > 0` or a still-valid access token is present. `teams_has_msal_cache` stays for parking.
+A new page expression, evaluated with `awaitPromise`, walks localStorage the way `fetch.js` does: sealed entries are those with `id`, `nonce`, and `data`; it opens them with the encryption cookie; a still-valid access token is an `AccessToken` whose `expiresOn` is still in the future. The hide tracker advances only when a still-valid access token is present among the plain or unsealed entries; merely opening an expired or non-token sealed entry does not count once the encryption cookie persists across restarts. `teams_has_msal_cache` stays for parking.
 
 Alternative considered: call `fetch.js` with an empty request. Rejected because that script acquires tokens and can refresh, which is the wrong side effect for a poll that runs twice a second.
 
@@ -42,7 +42,7 @@ Alternative considered: call `fetch.js` with an empty request. Rejected because 
 - [The 500 ms budget expires on a slow page] → the close still happens, a warning is logged, and the next start asks for sign-in once. The stop timeout test keeps the close inside the app budget.
 - [The encryption key is stored in the profile cookie store] → the profile already holds the session cookies that can renew tokens. Same trade-off upstream accepted. No other cookies are rewritten.
 - [A Teams page that looks signed in but has only expired plain entries keeps the window up] → that is the intended stop for the loop. The user completes sign-in until a usable token exists.
-- [The unseal snippet can drift from `fetch.js`] → the hide check only needs opened-or-fresh, not scope matching. The pure decision function is unit-tested without a browser.
+- [The unseal snippet can drift from `fetch.js`] → the hide check only needs a fresh access token, not scope matching. The pure decision function is unit-tested without a browser.
 
 ## Migration Plan
 

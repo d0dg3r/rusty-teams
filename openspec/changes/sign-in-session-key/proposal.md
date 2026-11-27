@@ -7,7 +7,7 @@ On Linux and macOS the app restarts the Teams session browser to move it into th
 ## What Changes
 
 - Before the managed Chromium process stops, the cache-encryption cookie is given an expiry so the next start can still open the encrypted token cache. Other session cookies stay as they are.
-- The app moves the browser to the background only after the Teams page reports an opened encrypted cache entry or a still-valid access token. Token-shaped storage names alone do not finish sign-in.
+- The app moves the browser to the background only after the Teams page reports a still-valid access token, whether stored in the clear or decrypted from an encrypted cache entry. Token-shaped storage names and expired encrypted entries do not finish sign-in.
 - The app-stop budget covers saving that cookie and then closing the browser. A save that does not finish in time is logged and the close still runs.
 - Guest-organisation MFA, the org switcher, and the connection-banner way back to a home organisation stay unchanged.
 

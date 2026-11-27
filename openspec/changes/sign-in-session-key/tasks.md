@@ -7,7 +7,7 @@
 
 ## 2. Finish sign-in only on a usable token
 
-- [x] 2.1 Add a page report and a pure decision that is true only when a sealed entry opened or a still-valid access token exists. Verify with `cargo test -p browser --lib sign_in_ready`.
+- [x] 2.1 Add a page report and a pure decision that is true only when a still-valid access token exists (plain or decrypted from a sealed entry), keeping expired unsealed entries false. Verify with `cargo test -p browser --lib sign_in_ready`.
 - [x] 2.2 Use that decision in `hide_after_login` instead of the localStorage name check. Verify with `cargo test -p app --lib linux_browser` covering the case where token-shaped names do not hide the window.
 
 ## 3. Proof on this machine
