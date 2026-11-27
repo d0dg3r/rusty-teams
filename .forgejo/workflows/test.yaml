@@ -6,6 +6,17 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      only:
+        description: Which test jobs to run
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - linux
+          - windows
+          - macos
 
 concurrency:
   group: test-${{ github.ref }}
@@ -33,6 +44,7 @@ jobs:
   linux:
     name: Linux
     needs: [openspec-gate]
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.only == 'all' || inputs.only == 'linux' }}
     # ci-runner-linux-01..03 (16 GiB each) all advertise ubuntu-latest.
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -57,6 +69,7 @@ jobs:
   windows:
     name: Windows
     needs: [openspec-gate]
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.only == 'all' || inputs.only == 'windows' }}
     runs-on: ci-runner-windows-01
     timeout-minutes: 90
     env:
@@ -81,6 +94,7 @@ jobs:
   macos:
     name: macOS
     needs: [openspec-gate]
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.only == 'all' || inputs.only == 'macos' }}
     runs-on: macos-arm64
     timeout-minutes: 90
     env:
