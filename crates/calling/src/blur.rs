@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
@@ -8,13 +8,13 @@ use libwebrtc::video_frame::{I420Buffer, VideoBuffer as _};
 
 use crate::background::BackgroundPicture;
 use crate::camera::i420_from_rgba;
-use crate::composite::{Backdrop, PicturePlanes, composite};
+use crate::composite::{composite, Backdrop, PicturePlanes};
 use crate::effects::CameraEffects;
 use crate::error::Result;
 use crate::latest::Latest;
 use crate::mask::Mask;
-use crate::matte::{Matte, Planes, refine};
-use crate::motion::{LumaGrid, propagate};
+use crate::matte::{refine, Matte, Planes};
+use crate::motion::{propagate, LumaGrid};
 use crate::segmentation::LadderSegmenter;
 use crate::standout::Cutout;
 
@@ -660,11 +660,9 @@ mod tests {
         );
         let mut nobody = original;
         compose_image(&mut nobody, WIDTH, HEIGHT, &empty, &cover_of([0, 0, 0]));
-        assert!(
-            nobody
-                .chunks(CHANNELS)
-                .all(|pixel| pixel[..3] == [0, 0, 0] && pixel[3] == 255)
-        );
+        assert!(nobody
+            .chunks(CHANNELS)
+            .all(|pixel| pixel[..3] == [0, 0, 0] && pixel[3] == 255));
     }
 
     fn wait_for_mask(source: &mut MaskSource, frame: impl Fn() -> Frame) -> bool {
@@ -731,28 +729,84 @@ mod tests {
         assert!(started.elapsed() < Duration::from_millis(150));
     }
 
+    /// The worker stays inside `infer` until a permit is granted. Drop releases
+    /// the wait so `MaskSource` can join the thread when the test ends.
+    struct HeldSegmenter {
+        permits: Arc<(Mutex<usize>, Condvar)>,
+        seen: Arc<Mutex<Vec<u8>>>,
+    }
+
+    impl HeldSegmenter {
+        fn grant(permits: &Arc<(Mutex<usize>, Condvar)>) {
+            let (lock, cv) = &**permits;
+            *lock.lock().expect("permit lock") += 1;
+            cv.notify_one();
+        }
+    }
+
+    impl MaskInference for HeldSegmenter {
+        fn infer(&mut self, frame: I420Buffer) -> Result<Mask> {
+            let marker = frame.data().0[0];
+            self.seen.lock().expect("seen lock").push(marker);
+            let (lock, cv) = &*self.permits;
+            let mut permits = lock.lock().expect("permit lock");
+            while *permits == 0 {
+                permits = cv.wait(permits).expect("permit wait");
+            }
+            *permits -= 1;
+            Ok(Mask::filled(
+                MASK_WIDTH,
+                MASK_HEIGHT,
+                f32::from(marker) / 255.,
+            ))
+        }
+    }
+
     #[test]
     fn the_mask_age_counts_the_frames_shown_since_its_source_frame() {
         let seen = Arc::new(Mutex::new(Vec::new()));
-        let mut source = MaskSource::with_inference(SlowSegmenter {
-            delay: Duration::from_millis(60),
+        let permits = Arc::new((Mutex::new(0usize), Condvar::new()));
+        let mut source = MaskSource::with_inference(HeldSegmenter {
+            permits: permits.clone(),
             seen: seen.clone(),
         });
+        // Declared after `source`, so it drops first and lets the worker leave `infer`.
+        let _release = PermitRelease(permits.clone());
         assert!(!source.refresh(|| marked_frame(5)));
         let deadline = Instant::now() + Duration::from_secs(10);
-        while seen.lock().unwrap().is_empty() && Instant::now() < deadline {
+        while seen.lock().expect("seen lock").is_empty() && Instant::now() < deadline {
             std::thread::sleep(Duration::from_millis(1));
         }
+        assert!(
+            !seen.lock().expect("seen lock").is_empty(),
+            "the worker never started"
+        );
         let mut shown = 1;
+        for _ in 0..4 {
+            assert!(!source.refresh(|| marked_frame(6)));
+            shown += 1;
+        }
+        HeldSegmenter::grant(&permits);
         while !source.refresh(|| marked_frame(6)) && Instant::now() < deadline {
             shown += 1;
-            std::thread::sleep(Duration::from_millis(10));
+            std::thread::sleep(Duration::from_millis(1));
         }
-        assert!(shown >= 3, "the mask came back before the model was done");
+        assert!(Instant::now() < deadline, "the mask never arrived");
+        assert!(shown >= 5, "the mask came back before the model was done");
         assert_eq!(source.age(), shown);
         assert_eq!(source.reference().values.len(), 4);
         assert!(!source.refresh(|| marked_frame(7)));
         assert_eq!(source.age(), shown + 1);
+    }
+
+    struct PermitRelease(Arc<(Mutex<usize>, Condvar)>);
+
+    impl Drop for PermitRelease {
+        fn drop(&mut self) {
+            let (lock, cv) = &*self.0;
+            *lock.lock().expect("permit lock") = usize::MAX / 2;
+            cv.notify_all();
+        }
     }
 
     #[test]
