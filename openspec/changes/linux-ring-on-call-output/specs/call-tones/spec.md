@@ -11,9 +11,9 @@ When the user has selected a call output device, call tones SHALL play on that d
 
 #### Scenario: A Pulse description matches the saved key
 
-- **WHEN** the saved output key is "Arctis Pro Wireless Game" or "default: Arctis Pro Wireless Game" and Pulse lists a sink with that description
+- **WHEN** the saved output key is "Headset Game" or "default: Headset Game" and Pulse lists a sink with that description
 - **THEN** ringtone and ringback play on that sink
-- **AND** a sink described as "Arctis Pro Wireless Chat" is not used
+- **AND** a sink described as "Headset Chat" is not used
 
 #### Scenario: Default output is used when selection is missing
 
