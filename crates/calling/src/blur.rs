@@ -8,13 +8,13 @@ use libwebrtc::video_frame::{I420Buffer, VideoBuffer as _};
 
 use crate::background::BackgroundPicture;
 use crate::camera::i420_from_rgba;
-use crate::composite::{composite, Backdrop, PicturePlanes};
+use crate::composite::{Backdrop, PicturePlanes, composite};
 use crate::effects::CameraEffects;
 use crate::error::Result;
 use crate::latest::Latest;
 use crate::mask::Mask;
-use crate::matte::{refine, Matte, Planes};
-use crate::motion::{propagate, LumaGrid};
+use crate::matte::{Matte, Planes, refine};
+use crate::motion::{LumaGrid, propagate};
 use crate::segmentation::LadderSegmenter;
 use crate::standout::Cutout;
 
@@ -660,9 +660,11 @@ mod tests {
         );
         let mut nobody = original;
         compose_image(&mut nobody, WIDTH, HEIGHT, &empty, &cover_of([0, 0, 0]));
-        assert!(nobody
-            .chunks(CHANNELS)
-            .all(|pixel| pixel[..3] == [0, 0, 0] && pixel[3] == 255));
+        assert!(
+            nobody
+                .chunks(CHANNELS)
+                .all(|pixel| pixel[..3] == [0, 0, 0] && pixel[3] == 255)
+        );
     }
 
     fn wait_for_mask(source: &mut MaskSource, frame: impl Fn() -> Frame) -> bool {

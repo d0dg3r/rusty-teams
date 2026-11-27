@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -186,6 +186,44 @@ fn macroblocks(width: u32, height: u32) -> u32 {
 
 fn even(value: u32) -> u32 {
     value & !1
+}
+
+const BLANK_SAMPLE: usize = 64;
+const BLANK_AT: u8 = 95;
+
+/// Share of sampled bytes that are zero. A full scan of a window buffer is
+/// unnecessary: every 64th byte is enough to tell an empty portal frame from
+/// one that has pixels.
+pub(crate) fn blank_percent(bytes: &[u8]) -> u8 {
+    if bytes.is_empty() {
+        return 100;
+    }
+    let mut seen = 0u32;
+    let mut zero = 0u32;
+    for (index, byte) in bytes.iter().enumerate() {
+        if !index.is_multiple_of(BLANK_SAMPLE) {
+            continue;
+        }
+        seen += 1;
+        if *byte == 0 {
+            zero += 1;
+        }
+    }
+    if seen == 0 {
+        100
+    } else {
+        (zero.saturating_mul(100) / seen) as u8
+    }
+}
+
+fn note_share_frame(last: &AtomicU8, width: u32, height: u32, bytes: &[u8]) {
+    let blank = blank_percent(bytes);
+    let class = u8::from(blank >= BLANK_AT);
+    if last.swap(class, Ordering::Relaxed) == class {
+        return;
+    }
+    let state = if class == 1 { "blank" } else { "content" };
+    eprintln!("calls: share frame {width}x{height} {state} blank={blank}%");
 }
 
 fn buffer_covers(bytes: &[u8], width: u32, height: u32, stride: u32) -> bool {
@@ -502,6 +540,8 @@ pub(crate) fn start_portal_capture(
         let active_end: Arc<Mutex<Option<ActiveShareStop>>> = Arc::default();
         let end_mark = active_end.clone();
         let seen_frame = Arc::new(AtomicBool::new(false));
+        // 2 is neither blank nor content, so the first frame always logs.
+        let blank_state = Arc::new(AtomicU8::new(2));
         capturer.start_capture(None, move |result| {
             if !gate.load(Ordering::SeqCst) {
                 let Some(events) = &frame_events else { return };
@@ -521,6 +561,7 @@ pub(crate) fn start_portal_capture(
                         *since = None;
                     }
                     let (width, height) = (frame.width() as u32 & !1, frame.height() as u32 & !1);
+                    note_share_frame(&blank_state, width, height, frame.data());
                     if let Some(picture) = share_frame(frame.data(), width, height, frame.stride())
                     {
                         deliver(picture);
@@ -637,6 +678,14 @@ mod tests {
         let frame = share_frame(&bytes, 2560, 1440, 2560 * 4).expect("scaled");
         assert!(macroblocks(frame.width(), frame.height()) <= SHARE_SEND_MAX_FS);
         assert!(share_frame(&[0u8; 8], 4, 2, 16).is_none());
+    }
+
+    #[test]
+    fn a_zero_buffer_is_blank_and_a_marked_sample_is_not() {
+        assert!(blank_percent(&[0u8; 256]) >= 95);
+        let mut bytes = vec![0u8; 256];
+        bytes[0] = 0xff;
+        assert!(blank_percent(&bytes) < 95);
     }
 
     #[test]

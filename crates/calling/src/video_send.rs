@@ -713,9 +713,18 @@ impl LocalVideo {
     ) -> impl FnOnce(Option<String>) + Send + 'static {
         let updates = self.updates.clone();
         let commands = self.commands.clone();
+        let timeline = self.timeline.clone();
+        let share_stop = matches!(switch_off, CallCommand::StopShare);
         let started = generation.fetch_add(1, Ordering::SeqCst) + 1;
         let generation = generation.clone();
         move |reason| {
+            if share_stop {
+                let detail = reason.clone().unwrap_or_else(|| "quiet".to_owned());
+                if let Some(timeline) = &timeline {
+                    timeline.record("share stop", detail.clone());
+                }
+                eprintln!("calls: share stopped {detail}");
+            }
             if let Some(reason) = reason {
                 let _ = updates.send(CallUpdate::Notice(notice_with_detail(notice_key, reason)));
             }
