@@ -1,0 +1,18 @@
+---
+description: Examples in code, tests, and specs stay generic
+alwaysApply: true
+---
+
+# Generic fixtures
+
+Names in code, tests, OpenSpec, commits, and docs are placeholders. They are not copied from this machine.
+
+## Required
+
+1. Device names, sink descriptions, camera models, hostnames, account names, thread ids, and similar values from local logs or hardware stay out of the repo.
+2. Use generic placeholders such as «Headset Game», «Headset Chat», «Front Speakers», or «Webcam».
+3. If a real local name landed in a new change, replace it before the commit.
+
+## Do not
+
+- Paste a name from a diagnostics log, stdout, or the hardware on this machine into a test, spec, or comment
