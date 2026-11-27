@@ -40,5 +40,6 @@ Statuses: `proposed`, `accepted`, `superseded`.
 | [0022](0022-linux-parks-the-idle-teams-tab.md) | Linux parks the idle Teams tab in a Chromium browser |
 | [0023](0023-macos-desktop-toasts-use-notification-center.md) | macOS desktop toasts use Notification Center |
 | [0024](0024-release-notice-instead-of-self-update.md) | A new release is a notice, not a new binary |
+| [0025](0025-google-oauth-client-in-settings.md) | A saved Google OAuth client in Settings overrides the built-in client |
 
-Records `0001` to `0023` are the decisions already shipped. `0024` is proposed with this change. `0001` follows Daniel's call-window note in `GUARDRAILS.md`.
+Records `0001` to `0023` are the decisions already shipped. `0024` and `0025` are proposed. `0001` follows Daniel's call-window note in `GUARDRAILS.md`.

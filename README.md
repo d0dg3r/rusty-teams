@@ -141,11 +141,11 @@ cargo run --release -p app
 
 ### Google Calendar (optional)
 
-1. Settings > Calendar > Connect Google.
+1. Settings > Calendar accounts > Connect Google.
 2. Finish sign-in in the browser (if Google says the app is not verified, choose Advanced, then continue).
 3. Choose the home calendar and optional dual-write targets.
 
-Release builds bake in the project OAuth Desktop client. Local builds without that client stay Outlook-only unless you export `TEAMS_GOOGLE_CLIENT_ID` (and optionally `TEAMS_GOOGLE_CLIENT_SECRET`) before `cargo run`.
+Release builds bake in the project OAuth Desktop client, so those steps are enough when the client fields are empty. To use your own Desktop client, paste the client ID and client secret on that same page (the page has the short Google Cloud Console guide) and save. A saved pair is used instead of the built-in client and instead of `TEAMS_GOOGLE_CLIENT_ID` / `TEAMS_GOOGLE_CLIENT_SECRET`. Local builds without a built-in client stay Outlook-only until you save a pair or export those variables before `cargo run`.
 
 #### Maintainer: Google Cloud client for releases
 
