@@ -2,9 +2,7 @@
 
 ## [0.6.1-joe.8] - 2026-11-27
 
-The sign-in window stays open until Teams can use a token, and Linux can use
-Edge, Brave, Helium, or Vivaldi for that session. This tag also contains the
-Pulse ringtone from `0.6.1-joe.7`.
+Everything in this fork since `v0.6.1`.
 
 ### Fixed
 
@@ -12,6 +10,65 @@ Pulse ringtone from `0.6.1-joe.7`.
   finishes only when a token is usable.
 - Linux can pick Edge, Brave, Helium, or Vivaldi as the Teams session browser
   when that browser is installed.
+- Linux call tones play on the Pulse sink that matches the saved call output.
+  Game and Chat stay different sinks. When Pulse has no match, the tone uses
+  the system default.
+- The macOS host-load probe compiles. `thread_info` takes the flavor as
+  `u32`, and a pthread id is an integer.
+- An early camera or share send limit is applied when that source starts
+  sending, even if the controller does not repeat it.
+- On macOS, Share a window opens the ScreenCaptureKit window picker.
+  Cancelling it leaves the call connected. Closing the shared window ends
+  the share with a notice. The macOS package is Apple Silicon (arm64), needs
+  macOS 14, and its file name is `macos-arm64.zip`.
+- Editing a channel post to add a channel mention saves. Team and tag
+  mentions in a channel edit still save.
+- A long local write no longer freezes the window. Reads of chats and the
+  sidebar keep their own connections.
+- An accepted one-to-one call shows the chat button when the ring has no
+  thread id. The button opens the chat with that caller.
+- A new channel shows under its team, not as a group chat. A message for a
+  channel the app does not know yet refreshes the team list (at most once a
+  minute).
+- "See fewer channels" sits below the channels it revealed.
+- Linux hardware H.264 packed slice headers include their start code, so a
+  receiver can decode them
+  ([#95](https://github.com/danieldaeschle/rusty-teams/pull/95)).
+- When Microsoft refuses a token refresh, the log says why
+  ([#126](https://github.com/danieldaeschle/rusty-teams/pull/126)).
+- Updates follow the install, as in
+  [#86](https://github.com/danieldaeschle/rusty-teams/pull/86) after review.
+  Windows still downloads quietly and restarts when idle and not in a call.
+  A Linux copy under `~/.local` asks, then downloads and restarts.
+  macOS, deb, rpm, AppImage, and a binary that is not that install open the
+  release page. Flatpak does not check.
+- On a Wayland session, keyboard and pointer input outside the window counts
+  as activity, so presence stays Available while you work in another app
+  ([#106](https://github.com/danieldaeschle/rusty-teams/pull/106)).
+- Linux sign-in leaves the splash and opens the browser window
+  ([#105](https://github.com/danieldaeschle/rusty-teams/pull/105)).
+- Ring and meeting cards stay beside the desktop notification
+  ([#104](https://github.com/danieldaeschle/rusty-teams/pull/104)).
+- When Google rejects a calendar token, the app offers sign-in again
+  ([#103](https://github.com/danieldaeschle/rusty-teams/pull/103)).
+- The camera list only contains nodes that can capture
+  ([#102](https://github.com/danieldaeschle/rusty-teams/pull/102)).
+- Guests can attach files in a chat of a guest organization
+  ([#76](https://github.com/danieldaeschle/rusty-teams/pull/76)).
+- The update switch is labelled as a release notice
+  ([#86](https://github.com/danieldaeschle/rusty-teams/pull/86)).
+
+### Added
+
+- Each release package has a sibling `<name>.sha256`. Check it with
+  `sha256sum -c` in the same directory.
+- macOS call reports include a `host load` line every two seconds: CPU time
+  per thread, which camera effects are on, and the thermal state.
+- A one-to-one chat call starts as audio
+  ([#101](https://github.com/danieldaeschle/rusty-teams/pull/101)).
+- Search resolves people outside the organization, including a completed email
+  and a personal Microsoft account
+  ([#87](https://github.com/danieldaeschle/rusty-teams/pull/87)).
 
 ## [0.6.1-joe.7] - 2026-11-27
 

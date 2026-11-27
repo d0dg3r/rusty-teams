@@ -47,6 +47,7 @@ Alltags-Feature-Branches der eigenen Linie liegen nur auf `origin`. Auf den Spie
 
 - Tags und Releases auf **Forgejo** (`devops-geek/rusty-teams`).
 - Ein Fork-Release enthält die ganze Produktlinie auf `main`, auch Arbeit, die schon einen offenen Upstream-PR hat. Diese Arbeit vor dem Tag auf `main` committen. Etwas weglassen nur, wenn dieser Release ausdrücklich eine Ausnahme ist.
+- Die Release-Notes sind die CHANGELOG-Sektion dieses Tags. Sie zählt jede für Nutzer sichtbare Änderung seit dem vorherigen Release auf und nennt diese Basis. Nicht auf einen älteren Tag verweisen statt die Punkte zu schreiben. Bei `v0.6.1-joe.8` ist die Basis `v0.6.1`.
 - Branches, die noch Kopf eines offenen Upstream-PRs sind, nicht löschen. Der nächste Push auf `origin` lässt den Spiegel sie auf GitHub löschen und schliesst den PR.
 - Tag-Namespace nicht mit Upstream kollidieren: `v0.3.0-joe.1` (oder klar eigener Major), nicht denselben `vX.Y.Z`-Inhalt wie Upstream vortäuschen.
 - CI: Tag `v*` → `.forgejo/workflows/release.yaml` baut Linux-Pakete, Windows (amd64 + ARM64) und macOS; Assets landen auf dem Forgejo-Release und werden nach GitHub gespiegelt (`GITHUB_MIRROR_TOKEN`). Details: `GITHUB_RELEASE.md`.
