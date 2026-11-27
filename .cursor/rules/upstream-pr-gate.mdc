@@ -1,0 +1,17 @@
+---
+description: HARD STOP — upstream PRs stay draft until the PR gate checklist is filled
+alwaysApply: true
+---
+
+# Upstream PR gate — hard stop
+
+Before `gh pr create` against `danieldaeschle/rusty-teams`, and before marking that PR ready for review, fill the checklist in `AGENTS.md` («Before an upstream PR leaves draft»). Do this without being asked. Forgejo everyday work is out of scope. Leave the PR a draft until every stop below is done. `gate: no visual` and `gate: skip` are maintainer-only.
+
+## STOP
+
+1. **Review.** Two independent reviews of `git diff upstream/main...HEAD`, each by a reviewer that did not write the change. `## Review` has at least two non-empty lines: one per review, then one per finding (fixed, or not and why).
+2. **Problem.** No real `Closes` / `Fixes` / `Resolves` `#n` (or issue URL on `danieldaeschle/rusty-teams`): write `## Problem` (at least 80 characters) — what is wrong, when a user hits it, what should happen instead.
+3. **Issue first.** A `feat` title, or more than 400 changed lines (lockfiles excluded), needs an issue a maintainer labelled `status: accepted`. Do not add that label. Do not mark the PR ready; tell the user, or split the change.
+4. **Screenshot.** UI paths (`crates/app/src/views|settings|components|widgets/`, `crates/app/src/*_view.rs`, `locales/`) need a `--demo` or `scripts/headless-shot.sh` image in the body, or exactly `- [x] No visible change` plus a reason. No real Teams data.
+
+The rest of the body (title, Tests, Scope, no `openspec/` / `.specify/` / `.kiro/` in the upstream diff) is the same `AGENTS.md` section.

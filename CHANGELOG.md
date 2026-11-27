@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.1-joe.8] - 2026-11-27
+
+The sign-in window stays open until Teams can use a token, and Linux can use
+Edge, Brave, Helium, or Vivaldi for that session. This tag also contains the
+Pulse ringtone from `0.6.1-joe.7`.
+
+### Fixed
+
+- Restarting the sign-in browser keeps the token-cache key, and sign-in
+  finishes only when a token is usable.
+- Linux can pick Edge, Brave, Helium, or Vivaldi as the Teams session browser
+  when that browser is installed.
+
 ## [0.6.1-joe.7] - 2026-11-27
 
 On Linux, ringtone and ringback play on the saved call output. That key is

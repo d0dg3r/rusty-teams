@@ -3232,7 +3232,40 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_peer_to_peer_offer_from_the_teams_client_gets_an_answer() {
+    async fn a_udp_relay_lets_the_answer_return_before_the_gather_cap() {
+        let gathered = peer_sdp::Gathered::default();
+        gathered
+            .candidates
+            .lock()
+            .expect("candidates lock")
+            .push("candidate:1 1 udp 2122260223 203.0.113.5 50000 typ relay".into());
+        *gathered.relay_seen_at.lock().expect("relay time lock") =
+            Some(Instant::now() - RELAY_SETTLE);
+        let started = Instant::now();
+        let answered = answer_teams_offer(Some(&gathered)).await;
+        let elapsed = started.elapsed();
+        if let Err(error) = &answered {
+            panic!("{error}");
+        }
+        assert!(
+            elapsed < Duration::from_secs(1),
+            "answer waited {elapsed:?}, the gather cap is {GATHERING_LIMIT:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn gathering_without_a_relay_waits_out_the_cap() {
+        let gathered = peer_sdp::Gathered::default();
+        let started = Instant::now();
+        let _ = gathered.candidates().await;
+        let elapsed = started.elapsed();
+        assert!(elapsed + Duration::from_millis(150) >= GATHERING_LIMIT);
+        assert!(elapsed < GATHERING_LIMIT + Duration::from_secs(1));
+    }
+
+    async fn answer_teams_offer(
+        gathered: Option<&peer_sdp::Gathered>,
+    ) -> Result<peer_sdp::AnsweredMedia> {
         use libwebrtc::audio_source::native::NativeAudioSource;
         use libwebrtc::peer_connection_factory::native::PeerConnectionFactoryExt;
         let factory = devices::shared_factory();
@@ -3249,11 +3282,16 @@ mod tests {
             AnswerVideo::Receive,
             None,
             false,
-            None,
+            gathered,
         )
         .await;
         peer.close();
-        if let Err(error) = answered {
+        answered
+    }
+
+    #[tokio::test]
+    async fn a_peer_to_peer_offer_from_the_teams_client_gets_an_answer() {
+        if let Err(error) = answer_teams_offer(None).await {
             panic!("{error}");
         }
     }

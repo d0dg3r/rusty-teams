@@ -306,6 +306,10 @@ mod tests {
             log::Level::Debug,
             "(audio_device_buffer.cc:450): [REC : 10000msec, 48kHz] callbacks: 1000"
         ));
+        assert!(keeps_webrtc_line(
+            log::Level::Debug,
+            "(audio_device_pulse_linux.cc:820): number of availiable input devices is 3"
+        ));
         assert!(!keeps_webrtc_line(
             log::Level::Debug,
             "(audio_device_pulse_linux.cc:2236): requesting data"

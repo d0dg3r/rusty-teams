@@ -27,6 +27,7 @@ Dieses Repo ist Joes Produktlinie. Remotes und Rollen:
 
 - Nur **kleine, thematische Scheiben**, abgezweigt vom aktuellen `upstream/main`.
 - Nicht den ganzen Fork-Stand (Agent-Providers, lokale Experimente, …) als einen PR schicken.
+- Vor `gh pr create` und vor «ready for review» die Checkliste in `AGENTS.md` («Before an upstream PR leaves draft») ausfüllen, ohne danach gefragt zu werden (Rule `upstream-pr-gate`). Der PR bleibt Draft, bis das Gate steht.
 - Reihenfolge, ohne Abkürzung:
   1. Branch auf **Forgejo** pushen (`git push -u origin HEAD` bzw. `git push origin HEAD:pr/…`).
   2. Warten, bis der Push-Mirror denselben Branch auf `d0dg3r/rusty-teams` angelegt hat.
@@ -45,6 +46,8 @@ Alltags-Feature-Branches der eigenen Linie liegen nur auf `origin`. Auf den Spie
 ## Eigene Releases
 
 - Tags und Releases auf **Forgejo** (`devops-geek/rusty-teams`).
+- Ein Fork-Release enthält die ganze Produktlinie auf `main`, auch Arbeit, die schon einen offenen Upstream-PR hat. Diese Arbeit vor dem Tag auf `main` committen. Etwas weglassen nur, wenn dieser Release ausdrücklich eine Ausnahme ist.
+- Branches, die noch Kopf eines offenen Upstream-PRs sind, nicht löschen. Der nächste Push auf `origin` lässt den Spiegel sie auf GitHub löschen und schliesst den PR.
 - Tag-Namespace nicht mit Upstream kollidieren: `v0.3.0-joe.1` (oder klar eigener Major), nicht denselben `vX.Y.Z`-Inhalt wie Upstream vortäuschen.
 - CI: Tag `v*` → `.forgejo/workflows/release.yaml` baut Linux-Pakete, Windows (amd64 + ARM64) und macOS; Assets landen auf dem Forgejo-Release und werden nach GitHub gespiegelt (`GITHUB_MIRROR_TOKEN`). Details: `GITHUB_RELEASE.md`.
 - Lokale Installation: Paket bzw. Binary → `/usr/local/bin/rusty-teams` (`teams` ist Symlink).

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Release Linux binary with TEAMS_GOOGLE_* baked in, install to ~/.local + desktop entry,
-# and to /usr/local/bin/rusty-teams when that install exists.
+# Release Linux binary with TEAMS_GOOGLE_* baked in, then install that binary
+# only through the Arch package (pacman). No second copy under ~/.local or /usr/local.
 # Usage: scripts/install-linux-local.sh [--restart]
 # Loads .env.google.local when TEAMS_GOOGLE_CLIENT_ID is not exported. Without the client id
 # the app silently drops every Google calendar; without the Desktop client secret, token refresh
@@ -51,40 +51,42 @@ if ! grep -aFq "GOCSPX-" "$BIN"; then
   exit 1
 fi
 
-if $restart; then
-  # Binary is installed as rusty-teams (/usr/local) and teams (~/.local); kill both.
-  pkill -x rusty-teams 2>/dev/null || true
-  pkill -x teams 2>/dev/null || true
-  sleep 1
-  # Stale single-instance socket keeps a deleted-exe process as primary.
-  rm -f "${XDG_RUNTIME_DIR:-/tmp}/rusty-teams-${USER}.sock"
+# Same label as the installed package (changelog heading), so pacman does not
+# downgrade 0.6.1.joe.3 to the Cargo version 0.6.1.
+release="$(sed -n 's/^## \[\([^]]*\)\].*/\1/p; t found; b; :found q' "$repoRoot/CHANGELOG.md")"
+if [ -z "$release" ]; then
+  echo "no version heading in CHANGELOG.md" >&2
+  exit 1
+fi
+export RELEASE_VERSION="$release"
+echo "[$(date +%H:%M:%S)] packaging $RELEASE_VERSION…"
+"$repoRoot/packaging/archlinux/build_pkg.sh"
+pkg="$repoRoot/dist/rusty-teams-${RELEASE_VERSION}-x86_64.pkg.tar.zst"
+if [ ! -f "$pkg" ]; then
+  echo "package not written: $pkg" >&2
+  exit 1
 fi
 
-mkdir -p "$HOME/.local/bin" \
-  "$HOME/.local/share/applications" \
-  "$HOME/.local/share/icons/hicolor/256x256/apps"
-install -m 755 "$BIN" "$HOME/.local/bin/teams"
-install -m 644 "$repoRoot/crates/app/assets/icon/teams-fast-256.png" \
-  "$HOME/.local/share/icons/hicolor/256x256/apps/rusty-teams.png"
+echo "[$(date +%H:%M:%S)] stopping any running teams"
+pkill -x rusty-teams 2>/dev/null || true
+pkill -x teams 2>/dev/null || true
+sleep 1
+rm -f "${XDG_RUNTIME_DIR:-/tmp}/rusty-teams-${USER}.sock"
 
-# Absolute Exec so Dock/menu launch still finds the binary.
-sed "s|^Exec=.*|Exec=$HOME/.local/bin/teams|" \
-  "$repoRoot/packaging/linux/rusty-teams.desktop" \
-  > "$HOME/.local/share/applications/rusty-teams.desktop"
-chmod 644 "$HOME/.local/share/applications/rusty-teams.desktop"
+echo "[$(date +%H:%M:%S)] pacman -U"
+sudo pacman -U --noconfirm "$pkg"
+
+# Drop the shadow install the old script left next to the package.
+rm -f "$HOME/.local/bin/teams" \
+  "$HOME/.local/share/applications/rusty-teams.desktop" \
+  "$HOME/.local/share/icons/hicolor/256x256/apps/rusty-teams.png" \
+  /usr/local/bin/rusty-teams \
+  /usr/local/bin/teams
 update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
-gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
-echo "[$(date +%H:%M:%S)] INSTALLED $HOME/.local/bin/teams"
-
-if [ -e /usr/local/bin/rusty-teams ]; then
-  sudo install -m 755 "$BIN" /usr/local/bin/rusty-teams
-  echo "[$(date +%H:%M:%S)] INSTALLED /usr/local/bin/rusty-teams"
-fi
-
-echo "[$(date +%H:%M:%S)] VERIFY ok: client id and secret prefix present in binary"
+echo "[$(date +%H:%M:%S)] INSTALLED $(pacman -Q rusty-teams)"
 
 if $restart; then
-  nohup "$HOME/.local/bin/teams" >/tmp/rusty-teams-stdout.log 2>&1 &
+  nohup /usr/bin/teams >/tmp/rusty-teams-stdout.log 2>&1 &
   disown
   echo "[$(date +%H:%M:%S)] STARTED pid $! (log /tmp/rusty-teams-stdout.log)"
 fi
