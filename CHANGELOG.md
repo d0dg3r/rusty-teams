@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.1-joe.7] - 2026-11-27
+
+On Linux, ringtone and ringback play on the saved call output. That key is
+the Pulse sink description. The tone opens the sink with the same description
+or name. Game and Chat stay different sinks. When Pulse has no match, the
+tone uses the system default.
+
+### Fixed
+
+- Linux call tones play on the Pulse sink that matches the saved call output.
+
 ## [0.6.1-joe.6] - 2026-11-26
 
 The macOS package from `0.6.1-joe.5` did not build. This tag has that fix,
