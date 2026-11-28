@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.6.1-joe.11] - 2026-11-28
+
+What changed since `v0.6.1-joe.8`, including the Upstream sync to `08cf519`.
+
+### Fixed
+
+- The open chat stays put while someone is typing and while an agent run
+  spinner turns. The dots are their own view. The spinner advances twelve
+  times a second instead of on every display refresh.
+- Sign-in stays open until a fresh access token exists, even when sealed
+  MSAL entries still decrypt.
+- Stopping a Wayland share after frames have arrived stays quiet. A failure
+  before the first frame still shows a notice.
+- A window share records whether frames were blank and why the share stopped.
+- Reaction pill emoji and faces sit in the centre of the pill.
+- A received screen share stays visible
+  ([#127](https://github.com/danieldaeschle/rusty-teams/pull/127)).
+- AMD's H.264 encoder no longer crashes while sharing.
+- The MSAL cache key survives a Chromium restart
+  ([#123](https://github.com/danieldaeschle/rusty-teams/pull/123)).
+
+### Added
+
+- Code blocks open on ```, show Copy, and confirm the copy
+  ([#145](https://github.com/danieldaeschle/rusty-teams/pull/145)).
+- Long links are sent shortened and show their URL on hover
+  ([#135](https://github.com/danieldaeschle/rusty-teams/pull/135)).
+- Drag over empty calendar slots to create a meeting
+  ([#91](https://github.com/danieldaeschle/rusty-teams/pull/91)).
+
 ## [0.6.1-joe.8] - 2026-11-27
 
 Everything in this fork since `v0.6.1`.
