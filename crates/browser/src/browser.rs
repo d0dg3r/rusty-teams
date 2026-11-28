@@ -308,7 +308,7 @@ impl Browser {
         if tab.parked {
             return false;
         }
-        let expression = crate::sign_in_ready::PAGE_EXPRESSION;
+        let expression = crate::sign_in_ready::PAGE_EXPRESSION.as_str();
         if let Some(bidi) = &self.inner.bidi {
             let evaluate = tokio::time::timeout(
                 self.inner.timeouts.probe,
@@ -619,7 +619,7 @@ async fn cdp_call(
 }
 
 /// Gives MSAL's session-cookie cache key an expiry so the next start can still read the token
-/// cache. Best effort: a failure only means one more sign-in, so it is logged and the stop goes on.
+/// cache (#84). Best effort: a failure only means one more sign-in, so it is logged and the stop goes on.
 async fn keep_msal_cache_key(websocket_url: &str) {
     let now_secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
