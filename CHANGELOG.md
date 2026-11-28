@@ -6,6 +6,10 @@ What changed since `v0.6.1-joe.8`, including the Upstream sync to `08cf519`.
 
 ### Fixed
 
+- The open chat, the chat list and the rail stay put when nothing in them
+  changed. A presence tick, a repeated connection state or a typing event no
+  longer redraws the whole window. Text layout, code colouring and avatars
+  are reused, and a long channel list only builds the rows on screen.
 - The open chat stays put while someone is typing and while an agent run
   spinner turns. The dots are their own view. The spinner advances twelve
   times a second instead of on every display refresh.
